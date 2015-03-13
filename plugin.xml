@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    id="com.microsoft.hostedwebapp"
+    version="0.0.1">
+    <name>HostedWebApp</name>
+    <description>Hosted Web App Plugin</description>
+    <license>Apache 2.0</license>
+    <keywords>cordova,manifest,hosted,web</keywords>
+    <repo></repo>
+    <issue></issue>
+
+    <dependency id="org.apache.cordova.network-information" version=">=0.2.15" />
+
+    <hook type="before_prepare" src="scripts/updateConfiguration.js" />
+
+    <js-module src="www/hostedWebApp.js" name="hostedwebapp">
+        <clobbers target="hostedwebapp" />
+    </js-module>
+
+    <!-- android -->
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="HostedWebApp" >
+                <param name="android-package" value="com.microsoft.hostedwebapp.HostedWebApp"/>
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/HostedWebApp.java" target-dir="src/com/microsoft/hostedwebapp" />
+    </platform>
+  
+    <!-- windows -->
+    <platform name="windows">
+      <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
+        <merges target="" />
+      </js-module>
+    </platform>
+
+  <!-- ios -->
+  <platform name="ios">
+
+    <config-file target="config.xml" parent="/*">
+      <feature name="HostedWebApp">
+        <param name="ios-package" value="CDVHostedWebApp"/>
+      </feature>
+    </config-file>
+
+    <header-file src="src/ios/CDVHostedWebApp.h" />
+    <source-file src="src/ios/CDVHostedWebApp.m" />
+
+  </platform>
+
+</plugin>
