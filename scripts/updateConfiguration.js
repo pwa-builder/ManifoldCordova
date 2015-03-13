@@ -232,6 +232,10 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
         var size = element.width + "x" + element.height;
         var density = dppxToDensityMap[element.density];
         var isScreen = screenSizeToDensityMap[size];
+        if (density && isScreen) {
+            density = ((element.width > element.height) ? "land-" : "port-") + density;
+        }
+
         var isIcon = iconSizeToDensityMap[element.width];
         var screenDensity = density || isScreen;
         var iconDensity = density || isIcon;
@@ -252,7 +256,7 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
         }
         else if (iconDensity && isIcon) {
             for (var icon, i = 0; i < platformIcons.length; i++) {
-                if (element.density === platformIcons[i].get('density')) {
+                if (iconDensity === platformIcons[i].get('density')) {
                     icon = platformIcons[i];
                     break;
                 }
@@ -323,14 +327,14 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
     };
 
     var screenSizeToDensityMap = {
-        "800x480": "hdpi",
-        "320x200": "ldpi",
-        "480x320": "mdpi",
-        "1280x720":"xhdpi",
-        "480x800": "hdpi",
-        "200x320": "ldpi",
-        "320x480": "mdpi",
-        "720x1280":"xhdpi"
+        "800x480": "land-hdpi",
+        "320x200": "land-ldpi",
+        "480x320": "land-mdpi",
+        "1280x720":"land-xhdpi",
+        "480x800": "port-hdpi",
+        "200x320": "port-ldpi",
+        "320x480": "port-mdpi",
+        "720x1280":"port-xhdpi"
     };
 
     processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap);
