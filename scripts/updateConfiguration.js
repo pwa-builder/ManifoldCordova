@@ -384,7 +384,7 @@ module.exports = function (context) {
     configureParser(context);
 
     // read W3C manifest
-    var manifestPath = path.join(projectRoot, 'www', 'config.json');
+    var manifestPath = path.join(projectRoot, 'www', 'manifest.json');
     var manifestJson = fs.readFileSync(manifestPath).toString().replace(/^\uFEFF/, '');
     var manifest = JSON.parse(manifestJson);
 
