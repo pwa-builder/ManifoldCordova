@@ -2,7 +2,6 @@
 
 var fs = require('fs'),
     path = require('path'),
-    rex = require('./rex'),
     url = require('url'),
     downloader = require('./downloader'),
     pendingTasks = [],
