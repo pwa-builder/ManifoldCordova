@@ -222,7 +222,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="*" />') > -1);
   });
 
-  it('Should comment out extra access XML element if scope is defined', function (){
+  it('Should keep extra access XML element if scope is defined', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -235,7 +235,25 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<!--<access origin="http://com.example.hello/services" />-->') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/services" />') > -1);
+  });
+
+  it('Should keep extra access XML element if scope is defined', function (){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+      opts : {
+        projectRoot : testDir
+      }
+    };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/services" />') > -1);
   });
 
   it('Should not update config.xml access if it is missing in manifest.json', function (){
@@ -267,8 +285,8 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access launch-external="yes" origin="*" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<access launch-external="yes" origin="*" />') < content.indexOf('</widget>'));
+    assert(content.indexOf('<access origin="*" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+    assert(content.indexOf('<access origin="*" />') < content.indexOf('</widget>'));
   });
 
   it('Should add config.xml access external with value from manifest.json', function (){

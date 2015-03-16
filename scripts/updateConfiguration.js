@@ -167,7 +167,8 @@ function processAccessRules(popoutRules, scope) {
 
     // add a rule for the manifest scope, if it had not already been configured
     if (setScope) {
-        config.setAttribute('access', 'origin', scope);
+      var el = new etree.SubElement(config.doc.getroot(), 'access');
+      el.set('origin', scope);
     }
 }
 
@@ -395,7 +396,7 @@ module.exports = function (context) {
     if (manifest.name) {
       config.setName(manifest.name);
     }
-    
+
     config.setPreference('Orientation', manifest.orientation);
     if (manifest.display) {
         config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
