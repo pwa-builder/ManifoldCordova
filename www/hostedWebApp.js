@@ -1,13 +1,16 @@
 var hostedwebapp = {
-  load: function (successCallback, errorCallback, manifestPath) {
-    cordova.exec(successCallback, errorCallback, "HostedWebApp", "load", [manifestPath]);
+  loadManifest: function (successCallback, errorCallback, manifestFileName) {
+    cordova.exec(successCallback, errorCallback, "HostedWebApp", "loadManifest", [manifestFileName]);
   },
-  showOfflineOverlay: function () {
-    cordova.exec(null, null, "HostedWebApp", "showOfflineOverlay", []);
+  getManifest: function (successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, "HostedWebApp", "getManifest", []);
   },
-  hideOfflineOverlay: function () {
-    cordova.exec(null, null, "HostedWebApp", "hideOfflineOverlay", []);
+  enableOfflinePage : function () {
+    cordova.exec(undefined, undefined, "HostedWebApp", "enableOfflinePage", []);
   },
+  disableOfflinePage : function () {
+    cordova.exec(undefined, undefined, "HostedWebApp", "disableOfflinePage", []);
+  }
 }
 
 module.exports = hostedwebapp;
@@ -39,12 +42,11 @@ function configureOfflineSupport() {
 
 function onDeviceReady() {
   if (_deviceReady) return;
-
   _deviceReady = true;
 
   cordova.exec(function (data) {
     var manifestObject = JSON.parse(data);
-    cordova.exec(null, null, "HostedWebApp", "initialize", [manifestObject]);
+
     if (cordova.platformId === "windows" || cordova.platformId === "windows8") {
       var webView = document.createElement("x-ms-webview");
       var style = webView.style;
@@ -61,9 +63,9 @@ function onDeviceReady() {
       window.location.href = manifestObject.start_url;
     }
   }, function (err) {
-    console.log("Error loading Hosted Web App plugin");
+    console.log("Error loading Hosted Web App plugin: " + err);
   },
-  "HostedWebApp", "load", ["manifest.json"]);
+  "HostedWebApp", "getManifest", []);
 }
 
 document.addEventListener("deviceready", onDeviceReady, false);
