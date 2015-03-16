@@ -12,12 +12,53 @@ var fs = require('fs');
 var assetsDirectory = path.join(__dirname, 'assets');
 var workingDirectory = path.join(__dirname, 'tmp');
 
+function initializeContext(ctx) {
+  if (!ctx) {
+    ctx = {};
+  }
+
+  var requireCordovaModule = ctx.requireCordovaModule;
+
+  ctx.requireCordovaModule = function(moduleName) {
+    if (!moduleName) {
+      if (requireCordovaModule) {
+        return requireCordovaModule(moduleName);
+      }
+      else {
+        return;
+      }
+    }
+
+    if (moduleName === 'q') {
+      return require('q');
+    }
+
+    if (moduleName === 'cordova-lib/src/cordova/util') {
+      return require('cordova-lib/src/cordova/util');
+    }
+
+    if (moduleName === 'cordova-lib/src/configparser/ConfigParser') {
+      return require('cordova-lib/src/configparser/ConfigParser');
+    }
+
+    if (moduleName === 'cordova-lib/node_modules/elementtree') {
+      return require('cordova-lib/node_modules/elementtree');
+    }
+
+    if (requireCordovaModule) {
+      return requireCordovaModule(moduleName);
+    }
+  };
+
+  return ctx;
+}
+
 describe('updateConfiguration.js', function (){
   beforeEach(function () {
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
 
-  it('Should update config.xml name with value from config.json', function (){
+  it('Should update config.xml name with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -25,6 +66,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -32,7 +74,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>WAT Documentation</name>') > -1);
   });
 
-  it('Should not update config.xml name if it is missing in config.json', function (){
+  it('Should not update config.xml name if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -40,6 +82,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -55,6 +98,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -70,6 +114,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -78,7 +123,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>WAT Documentation</name>') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml orientation with value from config.json', function (){
+  it('Should update config.xml orientation with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -86,6 +131,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -93,7 +139,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="landscape" />') > -1);
   });
 
-  it('Should not update config.xml orientation if it is missing in config.json', function (){
+  it('Should not update config.xml orientation if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -101,6 +147,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -117,6 +164,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -132,6 +180,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -140,7 +189,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="landscape" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml fullscreen with value from config.json', function (){
+  it('Should update config.xml fullscreen with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -148,6 +197,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -155,7 +205,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
   });
 
-  it('Should not update config.xml fullscreen if it is missing in config.json', function (){
+  it('Should not update config.xml fullscreen if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -163,6 +213,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -178,6 +229,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -193,6 +245,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -201,7 +254,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml access with value from config.json', function (){
+  it('Should update config.xml access with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -209,6 +262,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -224,6 +278,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -231,7 +286,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<!--<access origin="http://com.example.hello/services" />-->') > -1);
   });
 
-  it('Should not update config.xml access if it is missing in config.json', function (){
+  it('Should not update config.xml access if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -239,6 +294,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -254,6 +310,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -269,6 +326,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -277,7 +335,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="*" />') < content.indexOf('</widget>'));
   });
 
-  it('Should add config.xml access external with value from config.json', function (){
+  it('Should add config.xml access external with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -285,6 +343,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
