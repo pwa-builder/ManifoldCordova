@@ -90,22 +90,6 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>HelloWorld</name>') > -1);
   });
 
-  it('Should update config.xml name if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<NAME>WAT Documentation</NAME>') > -1);
-  });
-
   it('Should add config.xml name if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
@@ -156,22 +140,6 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="default" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml orientation if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<PREFERENCE NAME="Orientation" value="landscape" />') > -1);
-  });
-
   it('Should add config.xml orientation if XML element element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
@@ -219,22 +187,6 @@ describe('updateConfiguration.js', function (){
 
     var content = fs.readFileSync(configXML).toString();
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
-  });
-
-  it('Should update config.xml fullscreen if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<PREFERENCE NAME="Fullscreen" value="true" />') > -1);
   });
 
   it('Should add config.xml fullscreen if XML element is missing', function (){
@@ -300,22 +252,6 @@ describe('updateConfiguration.js', function (){
 
     var content = fs.readFileSync(configXML).toString();
     assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
-  });
-
-  it('Should update config.xml access if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<ACCESS origin="*" />') > -1);
   });
 
   it('Should add config.xml access if XML element is missing', function (){
