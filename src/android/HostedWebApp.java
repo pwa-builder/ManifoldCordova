@@ -8,9 +8,7 @@ import android.webkit.WebView;
 import android.widget.LinearLayout;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaWebView;
 
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
@@ -40,9 +38,8 @@ public class HostedWebApp extends CordovaPlugin {
 
 
     @Override
-    public void initialize(CordovaInterface cordova, final CordovaWebView webView) {
-        super.initialize(cordova, webView);
-        this.cordova = cordova;
+    public void pluginInitialize() {
+        final HostedWebApp me = HostedWebApp.this;
         this.activity = cordova.getActivity();
 
         // Load default manifest file.
@@ -62,8 +59,6 @@ public class HostedWebApp extends CordovaPlugin {
         this.activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                HostedWebApp me = HostedWebApp.this;
-
                 if (me.rootLayout == null) {
                     me.rootLayout = me.createOfflineRootLayout();
                     me.activity.addContentView(me.rootLayout, me.rootLayout.getLayoutParams());
@@ -90,6 +85,7 @@ public class HostedWebApp extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        final HostedWebApp me = HostedWebApp.this;
         if (action.equals("getManifest")) {
             if (this.manifestObject != null) {
                 callbackContext.success(manifestObject.toString());
@@ -112,7 +108,6 @@ public class HostedWebApp extends CordovaPlugin {
                 this.cordova.getThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
-                        HostedWebApp me = HostedWebApp.this;
                         if (me.assetExists(configFilename)) {
                             try {
                                 me.manifestObject = me.loadLocalManifest(configFilename);
@@ -205,11 +200,11 @@ public class HostedWebApp extends CordovaPlugin {
     }
 
     private void showOfflineOverlay() {
+        final HostedWebApp me = HostedWebApp.this;
         if (this.offlineOverlayEnabled) {
             this.activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    HostedWebApp me = HostedWebApp.this;
                     if (me.rootLayout != null) {
                         me.rootLayout.setVisibility(View.VISIBLE);
                     }
@@ -219,10 +214,10 @@ public class HostedWebApp extends CordovaPlugin {
     }
 
     private void hideOfflineOverlay() {
+        final HostedWebApp me = HostedWebApp.this;
         this.activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                HostedWebApp me = HostedWebApp.this;
                 if (me.rootLayout != null) {
                     me.rootLayout.setVisibility(View.INVISIBLE);
                 }
