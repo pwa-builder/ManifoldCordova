@@ -239,8 +239,8 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="http://com.example.hello/services" />') > -1);
   });
 
-  it('Should keep extra access XML element if scope is defined', function (){
-    var testDir = path.join(workingDirectory, 'normalFlow');
+  it('Should update launch-external of the access rules based on the scope', function (){
+    var testDir = path.join(workingDirectory, 'scopeFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
       opts : {
@@ -252,8 +252,9 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
-    assert(content.indexOf('<access origin="http://com.example.hello/services" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/home" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/services" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/another" />') > -1);
   });
 
   it('Should not update config.xml access if it is missing in manifest.json', function (){
