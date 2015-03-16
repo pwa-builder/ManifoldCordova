@@ -267,8 +267,8 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="*" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<access origin="*" />') < content.indexOf('</widget>'));
+    assert(content.indexOf('<access launch-external="yes" origin="*" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+    assert(content.indexOf('<access launch-external="yes" origin="*" />') < content.indexOf('</widget>'));
   });
 
   it('Should add config.xml access external with value from manifest.json', function (){
@@ -284,8 +284,8 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="http://www.google.com/*" launch-external="yes" />') > -1);
-    assert(content.indexOf('<access origin="http://www.facebook.com/*" launch-external="yes" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://www.google.com/*" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://www.facebook.com/*" />') > -1);
   });
 
 
