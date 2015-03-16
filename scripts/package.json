@@ -6,10 +6,12 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "node ./node_modules/mocha/bin/mocha --reporter mocha-teamcity-reporter"
   },
   "devDependencies": {
     "cordova-lib": "^4.3.0",
+    "mocha": "^2.2.1",
+    "mocha-teamcity-reporter": "0.0.4",
     "q": "^1.2.0"
   }
 }
