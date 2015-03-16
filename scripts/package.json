@@ -6,7 +6,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node ./node_modules/mocha/bin/mocha --reporter mocha-teamcity-reporter"
+    "test": "node ./node_modules/mocha/bin/mocha",
+    "builder": "node ./node_modules/mocha/bin/mocha --reporter mocha-teamcity-reporter"
   },
   "devDependencies": {
     "cordova-lib": "^4.3.0",
