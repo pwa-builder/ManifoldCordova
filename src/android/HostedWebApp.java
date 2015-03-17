@@ -1,6 +1,5 @@
 package com.microsoft.hostedwebapp;
 
-import android.app.Activity;
 import android.content.res.AssetManager;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +7,7 @@ import android.webkit.WebView;
 import android.widget.LinearLayout;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaPlugin;
 
 import org.apache.cordova.PluginResult;
@@ -30,7 +30,7 @@ public class HostedWebApp extends CordovaPlugin {
     private boolean loadingManifest;
     private JSONObject manifestObject;
 
-    private Activity activity;
+    private CordovaActivity activity;
 
     private LinearLayout rootLayout;
     private WebView offlineWebView;
@@ -40,7 +40,7 @@ public class HostedWebApp extends CordovaPlugin {
     @Override
     public void pluginInitialize() {
         final HostedWebApp me = HostedWebApp.this;
-        this.activity = cordova.getActivity();
+        this.activity = (CordovaActivity)this.cordova.getActivity();
 
         // Load default manifest file.
         this.loadingManifest = true;
