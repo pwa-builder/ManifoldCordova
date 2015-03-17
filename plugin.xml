@@ -48,8 +48,8 @@
       </feature>
     </config-file>
     <config-file target="config.xml" parent="/*/feature[@name='NetworkStatus']">
-            <param name="onload" value="true" />
-        </config-file>
+        <param name="onload" value="true" />
+    </config-file>
 
     <header-file src="src/ios/CDVHostedWebApp.h" />
     <source-file src="src/ios/CDVHostedWebApp.m" />
