@@ -2,15 +2,16 @@
 var _offlineView;
 var _mainView;
 
+// creates a webview to host content
 function configureHost(url, zOrder, display) {
-    var webView = document.createElement(cordova.platformId === "windows8" ? "iframe" : "x-ms-webview");
+    var webView = document.createElement(cordova.platformId === 'windows8' ? 'iframe' : 'x-ms-webview');
     var style = webView.style;
-    style.position = "absolute";
+    style.position = 'absolute';
     style.top = 0;
     style.left = 0;
     style.zIndex = zOrder;
-    style.width = window.innerWidth + "px";
-    style.height = window.innerHeight + "px";
+    style.width = window.innerWidth + 'px';
+    style.height = window.innerHeight + 'px';
     if (display) {
         style.display = display;
     }
@@ -24,29 +25,45 @@ function configureHost(url, zOrder, display) {
     return webView;
 }
 
+// handle network connectivity change events
+function connectivityEvent(evt) {
+    if (evt.type === 'offline') {
+        _offlineView.style.display = 'block';
+        console.log('The application is currently offline.');
+    } else if (evt.type === 'online') {
+        _offlineView.style.display = 'none';
+        console.log('The application is currently online.');
+    }
+}
+
+// sets up a secondary webview to host the offline page
 function configureOfflineSupport(offlinePage) {
-    var url = new Windows.Foundation.Uri('ms-appx:///www/' + offlinePage);
+    var offlinePageUrl = '///www/' + offlinePage;
+    var url = new Windows.Foundation.Uri('ms-appx:' + offlinePageUrl);
     Windows.Storage.StorageFile.getFileFromApplicationUriAsync(url).then(
         function (file) {
-            _offlineView = configureHost(url.absoluteUri, 10001, 'none');
+            _offlineView = configureHost('ms-appx-web:' + offlinePageUrl, 10001, 'none');
         },
         function (err) {
             var message = 'It looks like you are offline. Please reconnect to use this application.';
-            var offlinePageTemplate = '<html><body><div style="background-color:white;height:100%;position:absolute;top:0;bottom:0;left:0;right:0;font-size:x-large;text-align:center;">' + message + '</div></body></html>';
+            var offlinePageTemplate = '<html><body><div style="font-size: x-large; position: absolute; left: 0; top: 0; bottom: 0; right: 0; height: 0; text-align: center; margin: auto">' + message + '</div></body></html>';
             _offlineView = configureHost(null, 10001, 'none');
-            _offlineView.contentDocument.write(offlinePageTemplate);
+
+            if (cordova.platformId === 'windows8') {
+                _offlineView.style.backgroundColor = 'white';
+                _offlineView.contentDocument.write(offlinePageTemplate);
+            } else {
+                _offlineView.navigateToString(offlinePageTemplate);
+            }
         }).done(function () {
-            // handle network connectivity change events
-            document.addEventListener('offline', function (e) {
-                _offlineView.style.display = "block";
-                console.log('The application is currently offline.');
-            }, false);
-            document.addEventListener('online', function () { _offlineView.style.display = "none"; }, false);
+            document.addEventListener('offline', connectivityEvent, false);
+            document.addEventListener('online', connectivityEvent, false);
         });
 }
 
+// loads the W3C manifest file
 function _loadManifestAsync(fileName, successCallback, errorCallback) {
-    var configFile = "ms-appx:///www/" + fileName;
+    var configFile = 'ms-appx:///www/' + fileName;
     var uri = new Windows.Foundation.Uri(configFile);
     Windows.Storage.StorageFile.getFileFromApplicationUriAsync(uri).then(
         function (file) {
@@ -61,10 +78,6 @@ function _loadManifestAsync(fileName, successCallback, errorCallback) {
 }
 
 module.exports = {
-    initialize: function (successCallback, errorCallback, args) {
-        _manifest = args[0];
-    },
-
     load: function (successCallback, errorCallback, args) {
         if (args && args.length > 0) {
             _loadManifestAsync(args[0], successCallback, errorCallback);
@@ -73,17 +86,17 @@ module.exports = {
             successCallback(_manifest);
         }
         else {
-            errorCallback("Manifest has not been loaded!");
+            errorCallback('Manifest has not been loaded!');
         }
     }
 }; // exports
 
-cordova.commandProxy.add("HostedWebApp", module.exports);
+cordova.commandProxy.add('HostedWebApp', module.exports);
 
 _loadManifestAsync('manifest.json',
     function (manifest) {
         _mainView = configureHost(manifest.start_url, 10000);
-        configureOfflineSupport('Xoffline.html');
+        configureOfflineSupport('offline.html');
     },
     function () {
 
