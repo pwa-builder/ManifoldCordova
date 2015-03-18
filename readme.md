@@ -7,6 +7,32 @@
 # Hosted Web Application
 This plugin enables the creation of a hosted web application from a [W3C manifest](http://www.w3.org/2008/webapps/manifest/) that provides metadata associated with a web application. It uses properties in the manifest to update corresponding properties in the Cordova configuration file to enable hosting the site’s content inside a Cordova application.
 
+**Typical manifest** 
+<pre>
+{
+  "lang": "en",
+  "name": "Super Racer 2000",
+  "short_name": "Racer2K",
+  "icons": [{
+        "src": "icon/lowres",
+        "sizes": "64x64",
+        "type": "image/webp"
+      }, {
+        "src": "icon/hd_small",
+        "sizes": "64x64"
+      }, {
+        "src": "icon/hd_hi",
+        "sizes": "128x128",
+        "density": 2
+      }],
+  "scope": "/",
+  "start_url": "/racer/start.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "theme_color": "aliceblue"
+}
+</pre>
+
 The W3C manifest enables the configuration of the application’s name, its starting URL, and the icons it uses. In addition, it will update the application’s security policy to control access to external domains. 
 
 When the application is launched, the plugin automatically handles navigation to the site’s starting URL.
