@@ -25,7 +25,7 @@ The plugin behavior is mostly implemented at build time by mapping properties in
 
 This mapping process is handled by a hook that executes during the **before_prepare** stage of the Cordova build process. The hook updates the **config.xml** file with values obtained from the manifest. 
 
-The plugin also handles downloading any icons that are specified in the manifest and copies them to the application’s **res/icons** directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
+The plugin hook also handles downloading any icons that are specified in the manifest and copies them to the application’s **res/icons** directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
 
 ## URL Access Rules
 For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, through a proprietary extension to the W3C spec, the manifest can also include URL access rules that specify one or more URLs that should be launched outside the context of the application, for example, by opening them in an external browser.
