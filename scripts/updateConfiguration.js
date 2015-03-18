@@ -100,6 +100,21 @@ function configureParser(context) {
             el.set(attname, value);
         }
     };
+    
+    config.replaceWithInternalAccessRule = function (el, origin) {
+      var root = this.doc.getroot();
+      
+      // Add new access rule without the 'launch-external' attribute
+      var newEl = new etree.SubElement(root, 'access');
+      newEl.set('origin', origin);
+      
+      // Remove the previous access rule
+      var childs = root.getchildren();
+      var idx = childs.indexOf(el);
+      if(idx > -1){
+          childs.splice(idx,1);
+      }
+    }
 
     // set the value of a "preference" element
     config.setPreference = function (name, value) {
@@ -121,10 +136,10 @@ function configureParser(context) {
     };
     
     config.removeWildcardRule = function(name){
-        var acessElements = this.doc.findall('access[@origin=\'*\']');
-        for(var i=0; i < acessElements.length; i++){
+        var accessElements = this.doc.findall('access[@origin=\'*\']');
+        for(var i=0; i < accessElements.length; i++){
             var childs = this.doc.getroot().getchildren();
-            var idx = childs.indexOf(acessElements[i]);
+            var idx = childs.indexOf(accessElements[i]);
             if(idx > -1){
                 childs.splice(idx,1);
             }
@@ -164,7 +179,15 @@ function processAccessRules(accessRules, scope) {
 
         accessList.forEach(function (item) {
             if (item.url === origin) {
-                el.set('launch-external', item.external ? 'yes' : 'no');
+                if (item.external) {
+                  el.set('launch-external', 'yes');
+                }
+                else {
+                  if (el.get("launch-external")) {
+                    config.replaceWithInternalAccessRule(el, origin);
+                  }
+                }
+                
                 item.inUse = true;
             }
         });

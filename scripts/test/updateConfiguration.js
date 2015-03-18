@@ -269,6 +269,7 @@ describe('updateConfiguration.js', function (){
 
     var content = fs.readFileSync(configXML).toString();
     assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/other" />') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/other" />') == -1);
   });
 
   it('Should not update access rules if it is missing in manifest.json', function (){
@@ -319,6 +320,22 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="http://wat-docs.azurewebsites.net/*" />') > -1);
   });
 
+  it('Should remove launch-external attribute in access rule', function (){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access origin="http://www.test.com/*" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://www.test.com/*" />') == -1);
+  });
 
   afterEach(function () {
     tu.deleteRecursiveSync(workingDirectory);
