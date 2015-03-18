@@ -222,6 +222,22 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="*" />') == -1);
   });
 
+  it('Should keep wildcard access rule if scope and external rules not present', function (){
+    var testDir = path.join(workingDirectory, 'noExternalRulesNorScope');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access origin="*" />') > -1);
+  });
+  
   it('Should keep extra access rules not defined in manifest.js', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');

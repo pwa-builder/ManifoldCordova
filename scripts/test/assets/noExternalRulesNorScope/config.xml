@@ -8,9 +8,5 @@
       Apache Cordova Team
   </author>
   <content src="index.html" />
-  <access origin="http://com.example.hello/home" launch-external="yes" />
-  <access origin="http://com.example.hello/services" launch-external="no" />
-  <access origin="http://com.example.hello/another" />
-  <preference name="Orientation" value="default" />
-  <preference name="Fullscreen" value="false" />
+  <access origin="*" />
 </widget>

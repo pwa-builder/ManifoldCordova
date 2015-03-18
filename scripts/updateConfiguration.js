@@ -134,11 +134,16 @@ function configureParser(context) {
 
 function processAccessRules(accessRules, scope) {
     // build the list of popout rules
+    var externalRules = false;
     var accessList = [];
     if (accessRules && accessRules instanceof Array) {
         accessRules.forEach(function (rule) {
             var element = { "url": rule.url, "external": rule.external === true ? true : false, "inUse": false };
             accessList.push(element);
+            
+            if (rule.external === true) {
+              externalRules = true;
+            }
         });
     }
     
@@ -147,7 +152,7 @@ function processAccessRules(accessRules, scope) {
       accessList.push(element);
     }
 
-    if (accessList.length > 0) {
+    if (scope || externalRules) {
       config.removeWildcardRule();
     }
 
