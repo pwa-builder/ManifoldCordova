@@ -28,11 +28,24 @@ This mapping process is handled by a hook that executes during the **before_prep
 The plugin hook also handles downloading any icons that are specified in the manifest and copies them to the application’s **res/icons** directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
 
 ## URL Access Rules
-For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, through a proprietary extension to the W3C spec, the manifest can also include URL access rules that specify one or more URLs that should be launched outside the context of the application, for example, by opening them in an external browser.
+For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. 
 
-Typically, a Cordova application defines a default security policy that controls access to external domains. The Cordova security policy must not only allow access to the scope defined by the W3C manifest but also to content referenced within the site, for example, from an external CDN origin hosting its script files. It must also map the URL access rules that should be launched externally. The plugin handles the mapping between the scoping and URL access rules in the W3C manifest and Cordova’s whitelisting access rules.
+Additionally, the manifest uses a proprietary setting named **hap_urlAccess** to define an array of access rules, each one consisting of an _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
 
-[TO BE COMPLETED]
+Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to content referenced within the site, for example, from an external CDN origin hosting its script files. It must also handle the URL access rules that should be launched externally. 
+
+To configure the security policy, the plugin hook generates suitable access elements in the Cordova configuration file to represent the scope and URL access rules in the W3C manifest. For example:
+
+|**Manifest.json**|**Config.xml**|
+|-------------|----------|
+|"scope":  "http://www.xyz.com/| &lt;access origin="http://www.xyz.com/*" /&gt;|
+|"hap_urlAccess":  [ |&lt;access origin="http://googleapis.com/*" /&gt; 
+|{ "url": "http//googleapis.com/*" },|&lt;access origin="http://wat.codeplex.com/" launch-external="yes" /&gt;|
+|{ "url": "http//wat.codeplex.com/", "external": true }]  
+||
+
+ 
+ 
 
 ## Offline Feature
 By default, the offline page will show a suitable message alerting the user about the loss of connectivity. To customize the offline experience, a page named **offline.html** can be placed in the **www** folder of the application and it will be used instead.
