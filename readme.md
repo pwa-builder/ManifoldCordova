@@ -14,9 +14,9 @@ When the application is launched, the plugin automatically handles navigation to
 Lastly, since network connectivity is essential to the operation of a hosted web application, the plugin implements a basic offline feature that will show an offline page whenever connectivity is lost and will prevent users from interacting with the application until the connection is restored.
 
 ## Installation
-[**NOTE**: These are temporary installation steps until the plugin is published. Before you begin, you must use Git to clone [this](https://github.com/southworkscom/meteorite.git "Meteorite repository") repository to your local disk.]
+[**NOTE**: These are temporary installation steps until the plugin is published.]
 
-`cordova plugin add [PATH-TO-CLONED-REPOSITORY]\dev\cordovaApps\plugins\com.microsoft.hostedwebapp`
+`cordova plugin add https://github.com/southworks.com/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
 
 **IMPORTANT**: Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
 
