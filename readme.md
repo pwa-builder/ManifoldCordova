@@ -38,7 +38,7 @@ To configure the security policy, the plugin hook generates suitable access elem
 
 |**Manifest.json**|**Config.xml**|
 |-------------|----------|
-|"scope":  "http://www.xyz.com/| &lt;access origin="http://www.xyz.com/*" /&gt;|
+|"scope":  "http://www.xyz.com/",| &lt;access origin="http://www.xyz.com/*" /&gt;|
 |"hap_urlAccess":  [ |&lt;access origin="http://googleapis.com/*" /&gt; 
 |{ "url": "http//googleapis.com/*" },|&lt;access origin="http://wat.codeplex.com/" launch-external="yes" /&gt;|
 |{ "url": "http//wat.codeplex.com/", "external": true }]  
