@@ -8,8 +8,10 @@
       Apache Cordova Team
   </author>
   <content src="index.html" />
+  <access origin="*" />
   <access origin="http://com.example.hello/home" />
   <access origin="http://com.example.hello/services" />
+  <access origin="http://com.example.hello/other" />
   <preference name="Orientation" value="default" />
   <preference name="Fullscreen" value="false" />
 </widget>

@@ -58,7 +58,7 @@ describe('updateConfiguration.js', function (){
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
 
-  it('Should update config.xml name with value from manifest.json', function (){
+  it('Should update name with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -74,7 +74,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>WAT Documentation</name>') > -1);
   });
 
-  it('Should not update config.xml name if it is missing in manifest.json', function (){
+  it('Should not update name if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -90,7 +90,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>HelloWorld</name>') > -1);
   });
 
-  it('Should add config.xml name if XML element is missing', function (){
+  it('Should add name if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -107,7 +107,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>WAT Documentation</name>') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml orientation with value from manifest.json', function (){
+  it('Should update orientation with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -123,7 +123,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="landscape" />') > -1);
   });
 
-  it('Should not update config.xml orientation if it is missing in manifest.json', function (){
+  it('Should not update orientation if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -140,7 +140,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="default" />') < content.indexOf('</widget>'));
   });
 
-  it('Should add config.xml orientation if XML element element is missing', function (){
+  it('Should add orientation if XML element element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -157,7 +157,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="landscape" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml fullscreen with value from manifest.json', function (){
+  it('Should update fullscreen with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -173,7 +173,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
   });
 
-  it('Should not update config.xml fullscreen if it is missing in manifest.json', function (){
+  it('Should not update fullscreen if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -189,7 +189,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
   });
 
-  it('Should add config.xml fullscreen if XML element is missing', function (){
+  it('Should add fullscreen if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -206,7 +206,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml access with value from manifest.json', function (){
+  it('Should remove wilcard access rule from config.xml', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -219,10 +219,10 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="*" />') > -1);
+    assert(content.indexOf('<access origin="*" />') == -1);
   });
 
-  it('Should keep extra access XML element if scope is defined', function (){
+  it('Should keep extra access rules not defined in manifest.js', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -239,8 +239,8 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="http://com.example.hello/services" />') > -1);
   });
 
-  it('Should update launch-external of the access rules based on the scope', function (){
-    var testDir = path.join(workingDirectory, 'scopeFlow');
+  it('Should update launch-external attribute of the access rules', function (){
+    var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
       opts : {
@@ -252,12 +252,10 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/home" />') > -1);
-    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/services" />') > -1);
-    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/another" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/other" />') > -1);
   });
 
-  it('Should not update config.xml access if it is missing in manifest.json', function (){
+  it('Should not update access rules if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -273,7 +271,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
   });
 
-  it('Should add config.xml access if XML element is missing', function (){
+  it('Should add access rule from hap_urlString if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -286,11 +284,10 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="*" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<access origin="*" />') < content.indexOf('</widget>'));
+    assert(content.indexOf('<access origin="http://ajax.googleapis.com/*" />') > -1);  
   });
 
-  it('Should add config.xml access external with value from manifest.json', function (){
+  it('Should add access rule from scope if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -303,8 +300,7 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access launch-external="yes" origin="http://www.google.com/*" />') > -1);
-    assert(content.indexOf('<access launch-external="yes" origin="http://www.facebook.com/*" />') > -1);
+    assert(content.indexOf('<access origin="http://wat-docs.azurewebsites.net/*" />') > -1);
   });
 
 
