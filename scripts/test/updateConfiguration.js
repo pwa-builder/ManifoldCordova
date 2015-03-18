@@ -206,7 +206,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
   });
 
-  it('Should remove wilcard access rule from config.xml', function (){
+  it('Should remove wildcard access rule from config.xml', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
