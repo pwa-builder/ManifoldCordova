@@ -173,7 +173,7 @@ function processAccessRules(accessRules, scope) {
 
     // scan existing access rules and update the launch-external setting depending on the rule matching
     // a URL of the access list (or the scope if available) in the manifest.
-    var accessElements = config.getElements('access');
+    var accessElements = config.getElements('./access');
     accessElements.forEach(function (el) {
         var origin = el.get('origin');
 

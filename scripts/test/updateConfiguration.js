@@ -337,6 +337,23 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access launch-external="yes" origin="http://www.test.com/*" />') == -1);
   });
 
+  it('Should ignore platform-specific access rules', function (){
+    var testDir = path.join(workingDirectory, 'platformAccessRules');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access origin="http://www.test.com/*" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://www.test.com/*" />') > -1);
+  });
+  
   afterEach(function () {
     tu.deleteRecursiveSync(workingDirectory);
   });
