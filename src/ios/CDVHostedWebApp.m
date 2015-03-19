@@ -8,6 +8,7 @@
 @property NSString *offlinePage;
 @property NSDictionary *manifest;
 @property NSString *manifestError;
+@property BOOL enableOfflineSupport;
 
 @end
 
@@ -27,7 +28,9 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                                              selector:@selector(updateConnectivityStatus:)
                                                  name:kReachabilityChangedNotification
                                                object:nil];
-
+    // enable offline support by default
+    self.enableOfflineSupport = YES;
+    
     // load the W3C manifest
     self.manifest = [self loadManifestFile:nil];
 }
@@ -58,6 +61,22 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:self.manifestError];
     }
     
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+// enables offline page support
+-(void) enableOfflinePage:(CDVInvokedUrlCommand *)command {
+    
+    self.enableOfflineSupport = YES;
+    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+// disables offline page support
+-(void) disableOfflinePage:(CDVInvokedUrlCommand *)command {
+    
+    self.enableOfflineSupport = NO;
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
@@ -142,13 +161,14 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     
     if ([[notification name] isEqualToString:kReachabilityChangedNotification]) {
         NSLog (@"Received a network connectivity change notification.");
-    
-        if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
-            if (reachability.connectionRequired) {
-                [self.offlineView setHidden:NO];
-            }
-            else {
-                [self.offlineView setHidden:YES];
+        if (self.enableOfflineSupport) {
+            if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
+                if (reachability.connectionRequired) {
+                    [self.offlineView setHidden:NO];
+                }
+                else {
+                    [self.offlineView setHidden:YES];
+                }
             }
         }
     }
