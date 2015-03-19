@@ -5,6 +5,7 @@ import android.content.res.AssetManager;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 
 import org.apache.cordova.CallbackContext;
@@ -32,6 +33,8 @@ public class HostedWebApp extends CordovaPlugin {
     private Activity activity;
     private WebView offlineWebView;
     private LinearLayout rootLayout;
+
+    private boolean isConnectionError = false;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -98,6 +101,29 @@ public class HostedWebApp extends CordovaPlugin {
     public Object onMessage(String id, Object data) {
         if (id.equals("networkconnection") && data != null) {
             handleNetworkConnectionChange(data.toString());
+        } else if (id.equals("onPageStarted")) {
+            this.isConnectionError = false;
+        } else if (id.equals("onReceivedError")) {
+            if (data instanceof JSONObject) {
+                JSONObject errorData = (JSONObject) data;
+                try {
+                    int errorCode = errorData.getInt("errorCode");
+                    if (404 == errorCode
+                            || WebViewClient.ERROR_HOST_LOOKUP == errorCode
+                            || WebViewClient.ERROR_CONNECT == errorCode
+                            || WebViewClient.ERROR_TIMEOUT == errorCode) {
+                        this.isConnectionError = true;
+                        this.showOfflineOverlay();
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        else if (id.equals("onPageFinished")) {
+            if (!this.isConnectionError) {
+                this.hideOfflineOverlay();
+            }
         }
         return null;
     }
@@ -143,7 +169,11 @@ public class HostedWebApp extends CordovaPlugin {
         if (info.equals("none")) {
             this.showOfflineOverlay();
         } else {
-            this.hideOfflineOverlay();
+            if (this.isConnectionError) {
+                this.webView.reload();
+            } else {
+                this.hideOfflineOverlay();
+            }
         }
     }
 
