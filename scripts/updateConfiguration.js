@@ -425,11 +425,12 @@ module.exports = function (context) {
     var manifestJson = fs.readFileSync(manifestPath).toString().replace(/^\uFEFF/, '');
     var manifest = JSON.parse(manifestJson);
 
-    // update name, orientation, and fullscreen from manifest
+    // update name, start_url, orientation, and fullscreen from manifest
     if (manifest.name) {
       config.setName(manifest.name);
     }
 
+    config.setAttribute('content', 'src', manifest.start_url);
     config.setPreference('Orientation', manifest.orientation);
     if (manifest.display) {
         config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
