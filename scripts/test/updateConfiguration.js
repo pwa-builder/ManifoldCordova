@@ -12,12 +12,53 @@ var fs = require('fs');
 var assetsDirectory = path.join(__dirname, 'assets');
 var workingDirectory = path.join(__dirname, 'tmp');
 
+function initializeContext(ctx) {
+  if (!ctx) {
+    ctx = {};
+  }
+
+  var requireCordovaModule = ctx.requireCordovaModule;
+
+  ctx.requireCordovaModule = function(moduleName) {
+    if (!moduleName) {
+      if (requireCordovaModule) {
+        return requireCordovaModule(moduleName);
+      }
+      else {
+        return;
+      }
+    }
+
+    if (moduleName === 'q') {
+      return require('q');
+    }
+
+    if (moduleName === 'cordova-lib/src/cordova/util') {
+      return require('cordova-lib/src/cordova/util');
+    }
+
+    if (moduleName === 'cordova-lib/src/configparser/ConfigParser') {
+      return require('cordova-lib/src/configparser/ConfigParser');
+    }
+
+    if (moduleName === 'cordova-lib/node_modules/elementtree') {
+      return require('cordova-lib/node_modules/elementtree');
+    }
+
+    if (requireCordovaModule) {
+      return requireCordovaModule(moduleName);
+    }
+  };
+
+  return ctx;
+}
+
 describe('updateConfiguration.js', function (){
   beforeEach(function () {
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
 
-  it('Should update config.xml name with value from config.json', function (){
+  it('Should update name with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -25,6 +66,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -32,7 +74,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>WAT Documentation</name>') > -1);
   });
 
-  it('Should not update config.xml name if it is missing in config.json', function (){
+  it('Should not update name if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -40,6 +82,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -47,22 +90,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>HelloWorld</name>') > -1);
   });
 
-  it('Should update config.xml name if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<NAME>WAT Documentation</NAME>') > -1);
-  });
-
-  it('Should add config.xml name if XML element is missing', function (){
+  it('Should add name if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -70,6 +98,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -78,7 +107,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<name>WAT Documentation</name>') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml orientation with value from config.json', function (){
+  it('Should update orientation with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -86,6 +115,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -93,7 +123,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="landscape" />') > -1);
   });
 
-  it('Should not update config.xml orientation if it is missing in config.json', function (){
+  it('Should not update orientation if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -101,6 +131,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -109,22 +140,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="default" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml orientation if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<PREFERENCE NAME="Orientation" value="landscape" />') > -1);
-  });
-
-  it('Should add config.xml orientation if XML element element is missing', function (){
+  it('Should add orientation if XML element element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -132,6 +148,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -140,7 +157,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Orientation" value="landscape" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml fullscreen with value from config.json', function (){
+  it('Should update fullscreen with value from manifest.json', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -148,6 +165,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -155,7 +173,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
   });
 
-  it('Should not update config.xml fullscreen if it is missing in config.json', function (){
+  it('Should not update fullscreen if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -163,6 +181,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -170,22 +189,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
   });
 
-  it('Should update config.xml fullscreen if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<PREFERENCE NAME="Fullscreen" value="true" />') > -1);
-  });
-
-  it('Should add config.xml fullscreen if XML element is missing', function (){
+  it('Should add fullscreen if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -193,6 +197,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -201,7 +206,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
   });
 
-  it('Should update config.xml access with value from config.json', function (){
+  it('Should remove wildcard access rule from config.xml', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -209,14 +214,31 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access origin="*" />') == -1);
+  });
+
+  it('Should keep wildcard access rule if scope and external rules not present', function (){
+    var testDir = path.join(workingDirectory, 'noExternalRulesNorScope');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
     assert(content.indexOf('<access origin="*" />') > -1);
   });
-
-  it('Should comment out extra access XML element if scope is defined', function (){
+  
+  it('Should keep extra access rules not defined in manifest.js', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -224,14 +246,33 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<!--<access origin="http://com.example.hello/services" />-->') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/services" />') > -1);
   });
 
-  it('Should not update config.xml access if it is missing in config.json', function (){
+  it('Should update launch-external attribute of the access rules', function (){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+      opts : {
+        projectRoot : testDir
+      }
+    };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access launch-external="yes" origin="http://com.example.hello/other" />') > -1);
+    assert(content.indexOf('<access origin="http://com.example.hello/other" />') == -1);
+  });
+
+  it('Should not update access rules if it is missing in manifest.json', function (){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -239,6 +280,7 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
@@ -246,22 +288,7 @@ describe('updateConfiguration.js', function (){
     assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
   });
 
-  it('Should update config.xml access if XML element is upper case', function (){
-    var testDir = path.join(workingDirectory, 'xmlCasing');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<ACCESS origin="*" />') > -1);
-  });
-
-  it('Should add config.xml access if XML element is missing', function (){
+  it('Should add access rule from hap_urlString if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -269,15 +296,15 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="*" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<access origin="*" />') < content.indexOf('</widget>'));
+    assert(content.indexOf('<access origin="http://ajax.googleapis.com/*" />') > -1);  
   });
 
-  it('Should add config.xml access external with value from config.json', function (){
+  it('Should add access rule from scope if XML element is missing', function (){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -285,14 +312,30 @@ describe('updateConfiguration.js', function (){
                   projectRoot : testDir
                 }
               };
+    initializeContext(ctx);
 
     updateConfiguration(ctx);
 
     var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="http://www.google.com/*" launch-external="yes" />') > -1);
-    assert(content.indexOf('<access origin="http://www.facebook.com/*" launch-external="yes" />') > -1);
+    assert(content.indexOf('<access origin="http://wat-docs.azurewebsites.net/*" />') > -1);
   });
 
+  it('Should remove launch-external attribute in access rule', function (){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx);
+
+    var content = fs.readFileSync(configXML).toString();
+    assert(content.indexOf('<access origin="http://www.test.com/*" />') > -1);
+    assert(content.indexOf('<access launch-external="yes" origin="http://www.test.com/*" />') == -1);
+  });
 
   afterEach(function () {
     tu.deleteRecursiveSync(workingDirectory);

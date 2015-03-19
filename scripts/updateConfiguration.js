@@ -47,7 +47,7 @@ function getManifestIcons(manifest) {
                 var element = { "src": icon.src, "width": dimensions[0], "height": dimensions[1], "density": icon.density, "inUse": false };
                 iconList.push(element);
             });
-                
+
             var deferral = new Q.defer();
             pendingTasks.push(deferral.promise);
             downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
@@ -56,7 +56,7 @@ function getManifestIcons(manifest) {
                     deferral.reject(err);
                     return;
                 }
-                    
+
                 console.log('Downloaded icon file: ' + data.path);
                 deferral.resolve(data);
             });
@@ -100,11 +100,26 @@ function configureParser(context) {
             el.set(attname, value);
         }
     };
+    
+    config.replaceWithInternalAccessRule = function (el, origin) {
+      var root = this.doc.getroot();
+      
+      // Add new access rule without the 'launch-external' attribute
+      var newEl = new etree.SubElement(root, 'access');
+      newEl.set('origin', origin);
+      
+      // Remove the previous access rule
+      var childs = root.getchildren();
+      var idx = childs.indexOf(el);
+      if(idx > -1){
+          childs.splice(idx,1);
+      }
+    }
 
     // set the value of a "preference" element
     config.setPreference = function (name, value) {
         if (value) {
-            var el = this.doc.find('preference[@name=\'' + name + '\']'); 
+            var el = this.doc.find('preference[@name=\'' + name + '\']');
             if (!el) {
                 var root = this.doc.getroot();
                 el = new etree.SubElement(root, 'preference');
@@ -118,57 +133,76 @@ function configureParser(context) {
     // get all elements with the specified name
     config.getElements = function (name) {
         return this.doc.findall(name);
-    }
+    };
+    
+    config.removeWildcardRule = function(name){
+        var accessElements = this.doc.findall('access[@origin=\'*\']');
+        for(var i=0; i < accessElements.length; i++){
+            var childs = this.doc.getroot().getchildren();
+            var idx = childs.indexOf(accessElements[i]);
+            if(idx > -1){
+                childs.splice(idx,1);
+            }
+        }
+    };
 }
 
-function processAccessRules(popoutRules, scope) {
-    // build the list of popout rules    
-    var popoutList = [];
-    if (popoutRules && popoutRules instanceof Array) {
-        popoutRules.forEach(function (url) {
-            var element = { "url": url, "inUse": false };
-            popoutList.push(element);
+function processAccessRules(accessRules, scope) {
+    // build the list of popout rules
+    var externalRules = false;
+    var accessList = [];
+    if (accessRules && accessRules instanceof Array) {
+        accessRules.forEach(function (rule) {
+            var element = { "url": rule.url, "external": rule.external === true ? true : false, "inUse": false };
+            accessList.push(element);
+            
+            if (rule.external === true) {
+              externalRules = true;
+            }
         });
     }
+    
+    if (scope) {
+      var element = { "url": scope, "external": false, "inUse": false };
+      accessList.push(element);
+    }
 
-    // scan existing access rules and enable launch-external on any rule matching 
-    // a popout URL in the manifest. Also, update the wildcard rule ('*') to match 
-    // the manifest scope (if available)
-    var setScope = true;
-    var accessList = config.getElements('access');
-    accessList.forEach(function (el) {
+    if (scope || externalRules) {
+      config.removeWildcardRule();
+    }
+
+    // scan existing access rules and update the launch-external setting depending on the rule matching
+    // a URL of the access list (or the scope if available) in the manifest.
+    var accessElements = config.getElements('access');
+    accessElements.forEach(function (el) {
         var origin = el.get('origin');
-        if (origin === '*' && scope) {
-            el.set('origin', scope);
-            if (el.get('launch-external') === 'yes') {
-                el.set('launch-external', 'no');
-            }
 
-            setScope = false;
-        }
-
-        popoutList.forEach(function (item) {
+        accessList.forEach(function (item) {
             if (item.url === origin) {
-                el.set('launch-external', 'yes');
+                if (item.external) {
+                  el.set('launch-external', 'yes');
+                }
+                else {
+                  if (el.get("launch-external")) {
+                    config.replaceWithInternalAccessRule(el, origin);
+                  }
+                }
+                
                 item.inUse = true;
             }
         });
     });
-
-    // insert any rules in the manifest that were not already there 
-    // and enable launch-external
-    popoutList.forEach(function (item) {
+    
+    // insert any rules in the manifest that were not already there
+    accessList.forEach(function (item) {
         if (!item.inUse) {
             var el = new etree.SubElement(config.doc.getroot(), 'access');
             el.set('origin', item.url);
-            el.set('launch-external', 'yes');
+            if (item.external) {
+              el.set('launch-external', 'yes');
+            }
         }
     });
-
-    // add a rule for the manifest scope, if it had not already been configured
-    if (setScope) {
-        config.setAttribute('access', 'origin', scope);
-    }
 }
 
 function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSizes) {
@@ -379,7 +413,7 @@ function processWindowsPhoneIcons(manifestIcons) {
 
 module.exports = function (context) {
     logger.log('Updating Cordova configuration from W3C manifest...');
-    
+
     Q = context.requireCordovaModule('q');
 
     // create a parser for the Cordova configuration
@@ -392,14 +426,17 @@ module.exports = function (context) {
     var manifest = JSON.parse(manifestJson);
 
     // update name, orientation, and fullscreen from manifest
-    config.setName(manifest.name);
+    if (manifest.name) {
+      config.setName(manifest.name);
+    }
+
     config.setPreference('Orientation', manifest.orientation);
     if (manifest.display) {
         config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
     }
 
     // configure access rules
-    processAccessRules(manifest.wat_popout, manifest.scope);
+    processAccessRules(manifest.hap_urlAccess, manifest.scope);
 
     // configure manifest icons
     var manifestIcons = getManifestIcons(manifest);
