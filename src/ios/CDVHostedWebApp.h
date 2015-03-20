@@ -1,6 +1,12 @@
 #import <Cordova/CDVPlugin.h>
 
-@interface CDVHostedWebApp : CDVPlugin
+@interface WrappingWebViewDelegate : NSObject <UIWebViewDelegate>
+@property (nonatomic,retain) id<UIWebViewDelegate> wrappedDelegate;
+@end
+
+@interface CDVHostedWebApp : CDVPlugin {
+    WrappingWebViewDelegate *wrappingDelegate;
+}
 
 -(void) loadManifest:(CDVInvokedUrlCommand*)command;
 

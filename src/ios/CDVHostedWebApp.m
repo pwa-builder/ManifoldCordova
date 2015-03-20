@@ -9,7 +9,31 @@
 @property NSDictionary *manifest;
 @property NSString *manifestError;
 @property BOOL enableOfflineSupport;
+@property BOOL isConnectionError;
 
+@end
+
+@implementation WrappingWebViewDelegate
+
+static NSString* const CDVHostedWebAppWebViewDidFailLoadWithError = @"CDVHostedWebAppWebViewDidFailLoadWithError";
+
+- (void)webViewDidStartLoad:(UIWebView*)theWebView {
+    [self.wrappedDelegate webViewDidStartLoad: theWebView];
+}
+
+- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
+    return [self.wrappedDelegate webView:webView shouldStartLoadWithRequest:request navigationType:navigationType];
+}
+
+- (void)webViewDidFinishLoad:(UIWebView *)webView {
+    [self.wrappedDelegate webViewDidFinishLoad:webView];
+}
+
+- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
+    [self.wrappedDelegate webView:webView didFailLoadWithError:error];
+    
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CDVHostedWebAppWebViewDidFailLoadWithError object:error]];
+}
 @end
 
 @implementation CDVHostedWebApp
@@ -28,11 +52,26 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                                              selector:@selector(updateConnectivityStatus:)
                                                  name:kReachabilityChangedNotification
                                                object:nil];
+    
+    // observe notifications from webview when page fails lading
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(didWebViewFailLoadWithError:)
+                                                 name:CDVHostedWebAppWebViewDidFailLoadWithError
+                                               object:nil];
+    
     // enable offline support by default
     self.enableOfflineSupport = YES;
     
+    // no connection errors on startup
+    self.isConnectionError = NO;
+    
     // load the W3C manifest
     self.manifest = [self loadManifestFile:nil];
+    
+    // set the webview delegate to notify navigation events
+    wrappingDelegate = [[WrappingWebViewDelegate alloc] init];
+    wrappingDelegate.wrappedDelegate = self.webView.delegate;
+    [self.webView setDelegate:wrappingDelegate];
 }
 
 // loads the specified W3C manifest
@@ -169,6 +208,28 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                 else {
                     [self.offlineView setHidden:YES];
                 }
+            }
+        }
+    }
+}
+
+// Handles notifications from the webview delegate whenever a page load fails.
+- (void)didWebViewFailLoadWithError:(NSNotification*)notification
+{
+    NSError* error = [notification object];
+    
+    if ([[notification name] isEqualToString:CDVHostedWebAppWebViewDidFailLoadWithError]) {
+        NSLog (@"Received a navigation failure notification.");
+        if ([error code] == NSURLErrorTimedOut ||
+            [error code] == NSURLErrorUnsupportedURL ||
+            [error code] == NSURLErrorCannotFindHost ||
+            [error code] == NSURLErrorCannotConnectToHost ||
+            [error code] == NSURLErrorDNSLookupFailed ||
+            [error code] == NSURLErrorNotConnectedToInternet) {
+            
+            self.isConnectionError = YES;
+            if (self.enableOfflineSupport) {
+                [self.offlineView setHidden:NO];
             }
         }
     }
