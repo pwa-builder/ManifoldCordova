@@ -5,7 +5,7 @@
 -->
 
 # Hosted Web Application
-This plugin enables the creation of a hosted web application from a [W3C manifest](http://www.w3.org/2008/webapps/manifest/) that provides metadata associated with a web application. It uses properties in the manifest to update corresponding properties in the Cordova configuration file to enable hosting the site’s content inside a Cordova application.
+This plugin enables the creation of a hosted web application from a [W3C manifest](http://www.w3.org/2008/webapps/manifest/) that provides metadata associated with a web site. It uses properties in the manifest to update corresponding properties in the Cordova configuration file to enable using content hosted in the site inside a Cordova application.
 
 **Typical manifest** 
 <pre>
@@ -33,7 +33,7 @@ This plugin enables the creation of a hosted web application from a [W3C manifes
 }
 </pre>
 
-The W3C manifest enables the configuration of the application’s name, its starting URL, and the icons it uses. In addition, it will update the application’s security policy to control access to external domains. 
+The W3C manifest enables the configuration of the application’s name, its starting URL, default orientation, and the icons it uses. In addition, it will update the application’s security policy to control access to external domains. 
 
 When the application is launched, the plugin automatically handles navigation to the site’s starting URL.
 
@@ -49,6 +49,9 @@ Lastly, since network connectivity is essential to the operation of a hosted web
 ## Getting Started
 
 The following tutorial requires you to install the [Cordova Command-Line Inteface](http://cordova.apache.org/docs/en/4.0.0/guide_cli_index.md.html#The%20Command-Line%20Interface).
+
+### Hosting a Web Application
+The plugin enables using content hosted in a web site inside a Cordova application by providing a manifest that describes the site.
 
 1. Create a new Cordova application.  
 	`cordova create sampleapp yourdomain.sampleapp SampleHostedApp`
@@ -73,13 +76,21 @@ The following tutorial requires you to install the [Cordova Command-Line Intefac
 1. Launch the application in the emulator for one of the supported platforms. For example:  
 	`cordova emulate android`
 
-1. To test the offline support, interrupt the network connection to show the offline page and reconnect it to hide it. 
+	> **Note:** The plugin updates the Cordova configuration file (config.xml) with the information in the W3C manifest. If the information in the manifest changes, you can reapply the updated manifest settings at any time by executing prepare. For example:  
+	`cordova prepare`
 
-	> **Note:** The procedure for setting offline mode varies depending on whether you are testing on an actual device or an emulator. In a device, you can simply select airplane mode. For example, in [Ripple](http://ripple.incubator.apache.org/), you can simulate a network disconnection by setting the Connection Type to 'none' under Network Status. On the other hand, for the iOS Simulator, you may need to physically disconnect the network cable or turn off the WiFi connection of the host machine.
+### Offline Feature
+The plugin implements a basic offline feature that will show an offline page whenever connectivity is lost.
 
-1. Optionally, replace the default offline UI by adding a new page with the content to be shown while in offline mode. Name the page **offline.html** and place it in the **www** folder.
+1. To test the offline feature, interrupt the network connection to show the offline page and reconnect it to hide it. 
+
+	> **Note:** The procedure for setting offline mode varies depending on whether you are testing on an actual device or an emulator. In devices, you can simply set the device to airplane mode. In the case of simulators there is no single method. For example, in [Ripple](http://ripple.incubator.apache.org/), you can simulate a network disconnection by setting the Connection Type to 'none' under Network Status. On the other hand, for the iOS Simulator, you may need to physically disconnect the network cable or turn off the WiFi connection of the host machine.
+
+1. Optionally, replace the default offline UI by adding a new page with the content to be shown while in offline mode. Name the page **offline.html** and place it in the **www** folder of the project.
 
 ### Using Icons and Splash Screens
+The plugin uses any icons and splash screens specified in the manifest to configure the Cordova application.
+
 The sample manifest in the **assets** folder does not specify any icons for the web application. If you use this file for testing, the application will use the default Cordova icon set. To experiment with the plugin's icon and splash screen support, you need to update the manifest to reference suitable icons for each platform supported by the application, as described in the [W3C spec](http://www.w3.org/2008/webapps/manifest/#icon-object-and-its-members). Ideally, these icon files should be served by the target site. The plugin handles downloading the icon files and copying them to the appropriate locations in the project.
 
 In this repository, you can find a sample **/sandbox/cordova-icons/www/manifest.json** file that uses absolute URLs to reference icon files hosted locally even though the **start_url** member of the manifest points to a remote site (http://wat-docs.azurewebsites.net). It is intended for testing sites that do not yet publish their own icon files. To use it successfully, you need to launch a local web server to serve the local content, as described below.
@@ -89,7 +100,7 @@ In this repository, you can find a sample **/sandbox/cordova-icons/www/manifest.
 1. Launch a local web server to serve the icon files stored in the **/sandbox/cordova-icons/www** directory from **http://localhost:8080/**.  
 	`node site.js`
 
-> **Note:** You can, of course, replace the starting URL in the manifest with a site of your choice as well as replacing the image files with suitable icons and splash screens for the target site.
+> **Note:** You can, of course, replace the starting URL in the manifest with a site of your choice as well as replace the image files with suitable icons and splash screens for the target site.
 
 ## Design
 The plugin behavior is mostly implemented at build time by mapping properties in the W3C manifest to standard Cordova settings defined in the **config.xml** file. 
