@@ -4,6 +4,7 @@ import android.content.res.AssetManager;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 
 import org.apache.cordova.CallbackContext;
@@ -36,6 +37,7 @@ public class HostedWebApp extends CordovaPlugin {
     private WebView offlineWebView;
     private boolean offlineOverlayEnabled;
 
+    private boolean isConnectionError = false;
 
     @Override
     public void pluginInitialize() {
@@ -109,16 +111,16 @@ public class HostedWebApp extends CordovaPlugin {
                     @Override
                     public void run() {
                         if (me.assetExists(configFilename)) {
-                            try {
+            try {
                                 me.manifestObject = me.loadLocalManifest(configFilename);
                                 me.webView.postMessage("hostedWebApp_manifestLoaded", me.manifestObject);
                                 callbackContext.success(me.manifestObject);
                             } catch (JSONException e) {
-                                callbackContext.error(e.getMessage());
-                            }
-                        } else {
+                callbackContext.error(e.getMessage());
+            }
+        } else {
                             callbackContext.error("Manifest file not found in folder assets/www");
-                        }
+        }
 
                         me.loadingManifest = false;
                     }
@@ -129,8 +131,8 @@ public class HostedWebApp extends CordovaPlugin {
                 callbackContext.sendPluginResult(pluginResult);
             }
 
-            return true;
-        }
+        return true;
+    }
 
         if (action.equals("enableOfflinePage")) {
             this.offlineOverlayEnabled = true;
@@ -149,8 +151,30 @@ public class HostedWebApp extends CordovaPlugin {
     public Object onMessage(String id, Object data) {
         if (id.equals("networkconnection") && data != null) {
             this.handleNetworkConnectionChange(data.toString());
+        } else if (id.equals("onPageStarted")) {
+            this.isConnectionError = false;
+        } else if (id.equals("onReceivedError")) {
+            if (data instanceof JSONObject) {
+                JSONObject errorData = (JSONObject) data;
+                try {
+                    int errorCode = errorData.getInt("errorCode");
+                    if (404 == errorCode
+                            || WebViewClient.ERROR_HOST_LOOKUP == errorCode
+                            || WebViewClient.ERROR_CONNECT == errorCode
+                            || WebViewClient.ERROR_TIMEOUT == errorCode) {
+                        this.isConnectionError = true;
+                        this.showOfflineOverlay();
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-
+        else if (id.equals("onPageFinished")) {
+            if (!this.isConnectionError) {
+                this.hideOfflineOverlay();
+            }
+        }
         return null;
     }
 
@@ -195,22 +219,26 @@ public class HostedWebApp extends CordovaPlugin {
         if (info.equals("none")) {
             this.showOfflineOverlay();
         } else {
-            this.hideOfflineOverlay();
+            if (this.isConnectionError) {
+                this.webView.reload();
+            } else {
+                this.hideOfflineOverlay();
+            }
         }
     }
 
     private void showOfflineOverlay() {
         final HostedWebApp me = HostedWebApp.this;
         if (this.offlineOverlayEnabled) {
-            this.activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
+        this.activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
                     if (me.rootLayout != null) {
                         me.rootLayout.setVisibility(View.VISIBLE);
-                    }
+            }
                 }
-            });
-        }
+        });
+    }
     }
 
     private void hideOfflineOverlay() {
@@ -220,7 +248,7 @@ public class HostedWebApp extends CordovaPlugin {
             public void run() {
                 if (me.rootLayout != null) {
                     me.rootLayout.setVisibility(View.INVISIBLE);
-                }
+            }
             }
         });
     }
