@@ -1,4 +1,4 @@
-﻿<PRELIMINARY DOCUMENTATION
+﻿PRELIMINARY DOCUMENTATION
 
 <!---
  license: TBD
@@ -40,11 +40,56 @@ When the application is launched, the plugin automatically handles navigation to
 Lastly, since network connectivity is essential to the operation of a hosted web application, the plugin implements a basic offline feature that will show an offline page whenever connectivity is lost and will prevent users from interacting with the application until the connection is restored.
 
 ## Installation
-[**NOTE**: These are temporary installation steps until the plugin is published.]
+> **Note:** These are temporary installation steps until the plugin is published.
 
 `cordova plugin add https://github.com/southworkscom/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
 
-**IMPORTANT**: Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
+> **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
+
+## Getting Started
+
+The following tutorial requires you to install the [Cordova Command-Line Inteface](http://cordova.apache.org/docs/en/4.0.0/guide_cli_index.md.html#The%20Command-Line%20Interface).
+
+1. Create a new Cordova application.  
+	`cordova create sampleapp yourdomain.sampleapp SampleHostedApp`
+
+1. Go to the **sampleapp** directory created by the previous command.
+
+1. Download or create a [W3C manifest](http://www.w3.org/2008/webapps/manifest/) describing the website to be hosted by the Cordova application and copy this file to its **www** folder. If necessary, rename the file as **manifest.json**.
+
+	> **Note:** You can find a sample manifest file at **/dev/cordovaApps/assets/manifest.json** in this repository. This sample manifest references the http://wat-docs.azurewebsites.net site. 
+ 
+1. Add the **Hosted Web Application** plugin to the project.  
+	`cordova plugin add https://github.com/southworkscom/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
+
+	> **Note:** These are temporary installation steps until the plugin is published.
+
+1. Add one or more platforms, for example, to support Android.  
+	`cordova platform add android`
+
+1. Build the application.  
+	`cordova build`
+
+1. Launch the application in the emulator for one of the supported platforms. For example:  
+	`cordova emulate android`
+
+1. To test the offline support, interrupt the network connection to show the offline page and reconnect it to hide it. 
+
+	> **Note:** The procedure for setting offline mode varies depending on whether you are testing on an actual device or an emulator. In a device, you can simply select airplane mode. For example, in [Ripple](http://ripple.incubator.apache.org/), you can simulate a network disconnection by setting the Connection Type to 'none' under Network Status. On the other hand, for the iOS Simulator, you may need to physically disconnect the network cable or turn off the WiFi connection of the host machine.
+
+1. Optionally, replace the default offline UI by adding a new page with the content to be shown while in offline mode. Name the page **offline.html** and place it in the **www** folder.
+
+### Using Icons and Splash Screens
+The sample manifest in the **assets** folder does not specify any icons for the web application. If you use this file for testing, the application will use the default Cordova icon set. To experiment with the plugin's icon and splash screen support, you need to update the manifest to reference suitable icons for each platform supported by the application, as described in the [W3C spec](http://www.w3.org/2008/webapps/manifest/#icon-object-and-its-members). Ideally, these icon files should be served by the target site. The plugin handles downloading the icon files and copying them to the appropriate locations in the project.
+
+In this repository, you can find a sample **/sandbox/cordova-icons/www/manifest.json** file that uses absolute URLs to reference icon files hosted locally even though the **start_url** member of the manifest points to a remote site (http://wat-docs.azurewebsites.net). It is intended for testing sites that do not yet publish their own icon files. To use it successfully, you need to launch a local web server to serve the local content, as described below.
+
+1. Open a command prompt and change the current directory to  **/sandbox/cordova-icons** in this repository.
+
+1. Launch a local web server to serve the icon files stored in the **/sandbox/cordova-icons/www** directory from **http://localhost:8080/**.  
+	`node site.js`
+
+> **Note:** You can, of course, replace the starting URL in the manifest with a site of your choice as well as replacing the image files with suitable icons and splash screens for the target site.
 
 ## Design
 The plugin behavior is mostly implemented at build time by mapping properties in the W3C manifest to standard Cordova settings defined in the **config.xml** file. 
