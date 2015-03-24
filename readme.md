@@ -46,6 +46,13 @@ Lastly, since network connectivity is essential to the operation of a hosted web
 
 > **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
 
+## Design
+The plugin behavior is mostly implemented at build time by mapping properties in the W3C manifest to standard Cordova settings defined in the **config.xml** file. 
+
+This mapping process is handled by a hook that executes during the **before_prepare** stage of the Cordova build process. The hook updates the **config.xml** file with values obtained from the manifest. 
+
+The plugin hook also handles downloading any icons that are specified in the manifest and copies them to the application’s **res/icons** directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
+
 ## Getting Started
 
 The following tutorial requires you to install the [Cordova Command-Line Inteface](http://cordova.apache.org/docs/en/4.0.0/guide_cli_index.md.html#The%20Command-Line%20Interface).
@@ -80,7 +87,7 @@ The plugin enables using content hosted in a web site inside a Cordova applicati
 	`cordova prepare`
 
 ### Offline Feature
-The plugin implements a basic offline feature that will show an offline page whenever connectivity is lost.
+The plugin implements a basic offline feature that will show an offline page whenever network connectivity is lost. By default, the page shows a suitable message alerting the user about the loss of connectivity. To customize the offline experience, a page named **offline.html** can be placed in the **www** folder of the application and it will be used instead.
 
 1. To test the offline feature, interrupt the network connection to show the offline page and reconnect it to hide it. 
 
@@ -102,44 +109,59 @@ In this repository, you can find a sample **/sandbox/cordova-icons/www/manifest.
 
 > **Note:** You can, of course, replace the starting URL in the manifest with a site of your choice as well as replace the image files with suitable icons and splash screens for the target site.
 
-## Design
-The plugin behavior is mostly implemented at build time by mapping properties in the W3C manifest to standard Cordova settings defined in the **config.xml** file. 
+### URL Access Rules
+For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **hap_urlAccess** that defines an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
 
-This mapping process is handled by a hook that executes during the **before_prepare** stage of the Cordova build process. The hook updates the **config.xml** file with values obtained from the manifest. 
+Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to external content used within the site, for example, to reference script files hosted by a  CDN origin. It must also handle any URLs that should be launched externally. 
 
-The plugin hook also handles downloading any icons that are specified in the manifest and copies them to the application’s **res/icons** directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
+To configure the security policy, the plugin hook maps the scope and URL access rules in the W3C manifest (**manifest.json**) to suitable access elements in the Cordova configuration file (**config.xml**). For example:
 
-## URL Access Rules
-For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. 
+**Manifest.json**
+<pre>
+...
+   "scope":  "http://www.xyz.com/", 
+   "hap_urlAccess":  [ 
+     { "url": "http//googleapis.com/*" },
+     { "url": "http//wat.codeplex.com/", "external": true }
+   ]
+...
+</pre>
 
-Additionally, the manifest uses a proprietary setting named **hap_urlAccess** to define an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
-
-Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to content referenced within the site, for example, from an external CDN origin hosting its script files. It must also handle the URL access rules that should be launched externally. 
-
-To configure the security policy, the plugin hook generates suitable access elements in the Cordova configuration file to represent the scope and URL access rules in the W3C manifest. For example:
-
-|**Manifest.json**|**Config.xml**|
-|-------------|----------|
-|"scope":  "http://www.xyz.com/",| &lt;access origin="http://www.xyz.com/*" /&gt;|
-|"hap_urlAccess":  [ |&lt;access origin="http://googleapis.com/*" /&gt; 
-|{ "url": "http//googleapis.com/*" },|&lt;access origin="http://wat.codeplex.com/" launch-external="yes" /&gt;|
-|{ "url": "http//wat.codeplex.com/", "external": true }]  
-||
-
- 
- 
-
-## Offline Feature
-By default, the offline page will show a suitable message alerting the user about the loss of connectivity. To customize the offline experience, a page named **offline.html** can be placed in the **www** folder of the application and it will be used instead.
+**Config.xml**
+<pre>
+...
+&lt;access origin="http://www.xyz.com/*" /&gt;
+&lt;access origin="http://googleapis.com/*" /&gt; 
+&lt;access origin="http://wat.codeplex.com/" launch-external="yes" /&gt;
+...
+</pre>
 
 ## Preferences
 [TBD]
 
 ## Methods
-navigator.hostedwebapp.loadManifest  
-navigator.hostedwebapp.getManifest  
-navigator.hostedwebapp.enableOfflinePage  
-navigator.hostedwebapp.disableOfflinePage  
+- **loadManifest**:	Loads the specified W3C manifest.  
+
+	`hostedwebapp.loadManifest(successCallback, errorCallback, manifestFileName)`
+
+	_successCallback_: A callback that is passed a manifest object.  
+	_errorCallback_: A callback that executes if an error occurs when loading the manifest file.  
+	_manifestFileName_: The name of the manifest file to load.
+
+- **getManifest**: Returns the currently loaded manifest.
+
+	`hostedwebapp.getManifest(successCallback, errorCallback)`
+
+	_successCallback_: A callback that is passed a manifest object.  
+	_errorCallback_: A callback that executes if a manifest is not currently available.  
+
+- **enableOfflinePage**: Enables offline page support.
+
+	`hostedwebapp.enableOfflinePage()`
+
+- **disableOfflinePage**: Disables offline page support.
+
+	`hostedwebapp.disableOfflinePage()`
 
 ## Supported Platforms
 Windows 8.1  
