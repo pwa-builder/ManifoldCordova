@@ -139,6 +139,8 @@ To configure the security policy, the plugin hook maps the scope and URL access 
 [TBD]
 
 ## Methods
+Even though the following methods are available, it should be pointed out that calling them is not required as the plugin will provide most of its functionality by simply embedding a W3C manifest in the application package.
+
 - **loadManifest**:	Loads the specified W3C manifest.  
 
 	`hostedwebapp.loadManifest(successCallback, errorCallback, manifestFileName)`
