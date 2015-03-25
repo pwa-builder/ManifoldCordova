@@ -44,7 +44,7 @@ function getManifestIcons(manifest) {
             var sizes = icon.sizes.toLowerCase().split(' ');
             sizes.forEach(function (iconSize) {
                 var dimensions = iconSize.split('x');
-                var element = { "src": icon.src, "width": dimensions[0], "height": dimensions[1], "density": icon.density, "inUse": false };
+                var element = { "src": icon.src, "width": dimensions[0], "height": dimensions[1], "density": icon.density };
                 iconList.push(element);
             });
 
@@ -101,21 +101,6 @@ function configureParser(context) {
         }
     };
     
-    config.replaceWithInternalAccessRule = function (el, origin) {
-      var root = this.doc.getroot();
-      
-      // Add new access rule without the 'launch-external' attribute
-      var newEl = new etree.SubElement(root, 'access');
-      newEl.set('origin', origin);
-      
-      // Remove the previous access rule
-      var childs = root.getchildren();
-      var idx = childs.indexOf(el);
-      if(idx > -1){
-          childs.splice(idx,1);
-      }
-    }
-
     // set the value of a "preference" element
     config.setPreference = function (name, value) {
         if (value) {
@@ -135,72 +120,76 @@ function configureParser(context) {
         return this.doc.findall(name);
     };
     
-    config.removeWildcardRule = function(name){
-        var accessElements = this.doc.findall('access[@origin=\'*\']');
-        for(var i=0; i < accessElements.length; i++){
-            var childs = this.doc.getroot().getchildren();
-            var idx = childs.indexOf(accessElements[i]);
-            if(idx > -1){
-                childs.splice(idx,1);
+    // remove all elements from the document matching the specified XPath expression
+    config.removeElements = function (path){
+        var removeChilds = function (childs, elements) {
+            for(var i=0; i < elements.length; i++){
+                var idx = childs.indexOf(elements[i]);
+                if(idx > -1){                    
+                    childs.splice(idx,1);
+                }
             }
+
+            childs.forEach(function (child) {
+                removeChilds(child.getchildren(), elements);
+            });                
         }
+      
+        var elements = this.doc.findall(path);
+        removeChilds(this.doc.getroot().getchildren(), elements);
     };
 }
 
-function processAccessRules(accessRules, scope) {
-    // build the list of popout rules
+function processAccessRules(manifestRules, scope) {
+    // build the list of access rules
     var externalRules = false;
     var accessList = [];
-    if (accessRules && accessRules instanceof Array) {
-        accessRules.forEach(function (rule) {
-            var element = { "url": rule.url, "external": rule.external === true ? true : false, "inUse": false };
+    if (manifestRules && manifestRules instanceof Array) {
+        manifestRules.forEach(function (rule) {
+            var element = { "url": rule.url, "external": rule.external === true ? true : false };
             accessList.push(element);
             
-            if (rule.external === true) {
+            if (rule.external) {
               externalRules = true;
             }
         });
     }
     
+    // add the scope rule to the access rules list (as an internal rule)
     if (scope) {
-      var element = { "url": scope, "external": false, "inUse": false };
-      accessList.push(element);
+        var element = { "url": scope, "external": false };
+        accessList.push(element);
     }
 
+    // If there is a scope rule or there are external rules, remove the wildcard ('*') access rules
     if (scope || externalRules) {
-      config.removeWildcardRule();
+        config.removeElements('.//access[@origin=\'*\']');
     }
-
-    // scan existing access rules and update the launch-external setting depending on the rule matching
-    // a URL of the access list (or the scope if available) in the manifest.
-    var accessElements = config.getElements('./access');
-    accessElements.forEach(function (el) {
-        var origin = el.get('origin');
-
-        accessList.forEach(function (item) {
-            if (item.url === origin) {
-                if (item.external) {
-                  el.set('launch-external', 'yes');
-                }
-                else {
-                  if (el.get("launch-external")) {
-                    config.replaceWithInternalAccessRule(el, origin);
-                  }
-                }
-                
-                item.inUse = true;
-            }
-        });
-    });
     
-    // insert any rules in the manifest that were not already there
+    // Remove previous access rules
+    config.removeElements('.//access[@hap-rule=\'yes\']');
+    
+    // get the android platform section and create it if it does not exist
+    var androidRoot = config.doc.find('platform[@name=\'android\']');
+    if (!androidRoot) {
+        androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
+        androidRoot.set('name', 'android');
+    }              
+    
+    // add new access rules
     accessList.forEach(function (item) {
-        if (!item.inUse) {
+        if (item.external) {
+            // add external rule to the android platform section 
+            var el = new etree.SubElement(androidRoot, 'access');
+            el.set('hap-rule','yes');
+            el.set('launch-external','yes');
+            el.set('origin', item.url); 
+        }
+        else {
+            // add internal rule to the document's root level
             var el = new etree.SubElement(config.doc.getroot(), 'access');
-            el.set('origin', item.url);
-            if (item.external) {
-              el.set('launch-external', 'yes');
-            }
+            el.set('hap-rule','yes');
+            el.set('origin', item.url); 
         }
     });
 }

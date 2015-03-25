@@ -8,8 +8,9 @@
       Apache Cordova Team
   </author>
   <content src="index.html" />
-  <access origin="http://www,mydomain.com" />
+  <access origin="*" />
+  <access hap-rule="yes" origin="http://wat.codeplex.com" />
   <platform name="android">
-      <access launch-external="yes" origin="http://www.test.com/*" />
+      <access hap-rule="yes" launch-external="yes" origin="http://ajax.googleapis.com/*" />
   </platform>
 </widget>
