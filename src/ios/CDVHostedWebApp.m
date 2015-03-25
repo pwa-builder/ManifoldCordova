@@ -6,7 +6,6 @@
 
 @property UIWebView *offlineView;
 @property NSString *offlinePage;
-@property NSDictionary *manifest;
 @property NSString *manifestError;
 @property BOOL enableOfflineSupport;
 
@@ -14,12 +13,14 @@
 
 @implementation CDVHostedWebApp
 
+@synthesize manifest;
+
 static NSString * const defaultManifestFileName = @"manifest.json";
 
 - (void)pluginInitialize
 {
     [super pluginInitialize];
-    
+
     // creates the UI to show offline mode
     [self createOfflineView];
 
@@ -30,43 +31,43 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                                                object:nil];
     // enable offline support by default
     self.enableOfflineSupport = YES;
-    
+
     // load the W3C manifest
-    self.manifest = [self loadManifestFile:nil];
+    manifest = [self loadManifestFile:nil];
 }
 
 // loads the specified W3C manifest
 -(void) loadManifest:(CDVInvokedUrlCommand *)command {
-    
+
     CDVPluginResult* pluginResult = nil;
     NSString* manifestFileName = [command.arguments objectAtIndex:0];
 
-    self.manifest = [self loadManifestFile:manifestFileName];
+    manifest = [self loadManifestFile:manifestFileName];
     if (self.manifest != nil) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:self.manifest];
     } else {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:self.manifestError];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 // returns the currently loaded manifest
 -(void) getManifest:(CDVInvokedUrlCommand *)command {
-    
+
     CDVPluginResult* pluginResult = nil;
     if (self.manifest != nil) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:self.manifest];
     } else {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:self.manifestError];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 // enables offline page support
 -(void) enableOfflinePage:(CDVInvokedUrlCommand *)command {
-    
+
     self.enableOfflineSupport = YES;
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -74,7 +75,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
 // disables offline page support
 -(void) disableOfflinePage:(CDVInvokedUrlCommand *)command {
-    
+
     self.enableOfflineSupport = NO;
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -82,36 +83,38 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
 // loads a manifest file and parses it
 -(NSDictionary *) loadManifestFile:(NSString *)manifestFileName {
-    
+
     self.manifestError = nil;
-    
+
     if (manifestFileName == nil) {
         manifestFileName = defaultManifestFileName;
     }
-    
+
     NSString* filePath = [self.commandDelegate pathForResource:manifestFileName];
     if (filePath == nil) {
         self.manifestError = [NSString stringWithFormat:@"Missing manifest file: %@", manifestFileName];
         return nil;
     }
-    
+
     NSData *manifestData = [NSData dataWithContentsOfFile:filePath];
     if (manifestData == nil) {
         self.manifestError = [NSString stringWithFormat:@"Error reading manifest file: %@", manifestFileName];
         return nil;
     }
-    
+
     NSError *error = nil;
-    id manifest = [NSJSONSerialization JSONObjectWithData:manifestData options:0 error:&error];
-        
+    id parsedManifest = [NSJSONSerialization JSONObjectWithData:manifestData options:0 error:&error];
+
     if (error) {
         /* handle malformed JSON here */
         self.manifestError = [NSString stringWithFormat:@"Error parsing manifest file: %@ - %@", manifestFileName, error];
         return nil;
     }
 
-    if([manifest isKindOfClass:[NSDictionary class]]) {
-        return manifest;
+    if([parsedManifest isKindOfClass:[NSDictionary class]]) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:kManifestLoadedNotification object:parsedManifest];
+
+        return parsedManifest;
     }
 
     /* deserialization is not a dictionary--it probably means an invalid manifest. */
@@ -124,20 +127,20 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 - (void)createOfflineView
 {
     CGRect webViewBounds = self.webView.bounds;
-    
+
     webViewBounds.origin = self.webView.bounds.origin;
-    
+
     self.offlineView = [[UIWebView alloc] initWithFrame:webViewBounds];
     self.offlineView.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
     [self.offlineView setHidden:YES];
-    
+
     [self.viewController.view addSubview:self.offlineView];
-    
+
     NSURL* offlinePageURL = [NSURL URLWithString:self.offlinePage];
     if (offlinePageURL == nil) {
         offlinePageURL = [NSURL URLWithString:@"offline.html"];
     }
-    
+
     NSString* offlineFilePath = [self.commandDelegate pathForResource:[offlinePageURL path]];
     if (offlineFilePath != nil) {
         offlinePageURL = [NSURL fileURLWithPath:offlineFilePath];
@@ -149,7 +152,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             loadHTMLString:[NSString stringWithFormat:offlinePageTemplate, @"It looks like you are offline. Please reconnect to use this application."]
             baseURL:nil];
     }
-    
+
     [self.viewController.view sendSubviewToBack:self.webView];
 }
 
@@ -158,7 +161,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 - (void)updateConnectivityStatus:(NSNotification*)notification
 {
     CDVReachability* reachability = [notification object];
-    
+
     if ([[notification name] isEqualToString:kReachabilityChangedNotification]) {
         NSLog (@"Received a network connectivity change notification. The device is currently %@.", reachability.connectionRequired ? @"offline" : @"online");
         if (self.enableOfflineSupport) {

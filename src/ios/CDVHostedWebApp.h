@@ -1,6 +1,14 @@
 #import <Cordova/CDVPlugin.h>
 
+
+#define kManifestLoadedNotification @"kManifestLoadedNotification"
+
 @interface CDVHostedWebApp : CDVPlugin
+{
+    NSDictionary *manifest;
+}
+
+@property (nonatomic, strong, readonly) NSDictionary *manifest;
 
 -(void) loadManifest:(CDVInvokedUrlCommand*)command;
 
