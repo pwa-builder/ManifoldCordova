@@ -30,7 +30,7 @@ function configureHost(url, zOrder, display) {
 
 // handle network connectivity change events
 function connectivityEvent(evt) {
-    console.log('Received a network connectivity change notification. The device is currently ' + evt.type);
+    console.log('Received a network connectivity change notification. The device is currently ' + evt.type + '.');
     if (_enableOfflineSupport) {
         if (evt.type === 'offline') {
             _offlineView.style.display = 'block';

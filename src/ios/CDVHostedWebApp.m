@@ -160,7 +160,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     CDVReachability* reachability = [notification object];
     
     if ([[notification name] isEqualToString:kReachabilityChangedNotification]) {
-        NSLog (@"Received a network connectivity change notification.");
+        NSLog (@"Received a network connectivity change notification. The device is currently %@.", reachability.connectionRequired ? @"offline" : @"online");
         if (self.enableOfflineSupport) {
             if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
                 if (reachability.connectionRequired) {
