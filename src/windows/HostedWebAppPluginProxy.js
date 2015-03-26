@@ -1,9 +1,11 @@
-﻿var _manifest;
+cordova.define("com.microsoft.hostedwebapp.HostedWebAppPluginProxy", function(require, exports, module) { var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
 var _zIndex = 10000;
 var _enableOfflineSupport = true;
+var _lastKnownLocation;
+var _lastKnownLocationFailed = false;
 
 // creates a webview to host content
 function configureHost(url, zOrder, display) {
@@ -23,9 +25,25 @@ function configureHost(url, zOrder, display) {
         webView.src = url;
     }
 
+    webView.addEventListener("MSWebViewNavigationCompleted", navigationCompletedEvent, false);
+
     document.body.appendChild(webView);
 
     return webView;
+}
+
+// handle navigation completed event
+function navigationCompletedEvent(evt) {
+    if (evt.uri && evt.uri !== "") {
+        if (evt.isSuccess) {
+            _lastKnownLocationFailed = false;
+            _offlineView.style.display = 'none';
+        } else {
+            _lastKnownLocationFailed = true;
+        }
+
+        _lastKnownLocation = evt.uri;
+    }
 }
 
 // handle network connectivity change events
@@ -35,7 +53,14 @@ function connectivityEvent(evt) {
         if (evt.type === 'offline') {
             _offlineView.style.display = 'block';
         } else if (evt.type === 'online') {
-            _offlineView.style.display = 'none';
+            if (_lastKnownLocationFailed) {
+                if (_lastKnownLocation) {
+                    console.log("Reload last known location: '" + _lastKnownLocation + "'");
+                    _mainView.src = _lastKnownLocation;
+                }
+            } else {
+                _offlineView.style.display = 'none';
+            }
         }
     }
 }
@@ -125,3 +150,4 @@ module.exports.loadManifest(
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
         configureOfflineSupport('offline.html');
     });
+});
