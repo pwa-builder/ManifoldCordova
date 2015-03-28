@@ -1,4 +1,4 @@
-cordova.define("com.microsoft.hostedwebapp.HostedWebAppPluginProxy", function(require, exports, module) { var _manifest;
+var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
@@ -150,4 +150,3 @@ module.exports.loadManifest(
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
         configureOfflineSupport('offline.html');
     });
-});
