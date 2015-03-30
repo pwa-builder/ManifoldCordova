@@ -1,4 +1,4 @@
-var _manifest;
+﻿cordova.define("com.microsoft.hostedwebapp.HostedWebAppPluginProxy", function(require, exports, module) { cordova.define("com.microsoft.hostedwebapp.HostedWebAppPluginProxy", function(require, exports, module) { var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
@@ -6,6 +6,7 @@ var _zIndex = 10000;
 var _enableOfflineSupport = true;
 var _lastKnownLocation;
 var _lastKnownLocationFailed = false;
+var _externalWhiteList = [];
 
 // creates a webview to host content
 function configureHost(url, zOrder, display) {
@@ -26,13 +27,27 @@ function configureHost(url, zOrder, display) {
     }
 
     webView.addEventListener("MSWebViewNavigationCompleted", navigationCompletedEvent, false);
+    webView.addEventListener("MSWebViewNavigationStarting", navigationStartingEvent, false);
 
     document.body.appendChild(webView);
 
     return webView;
 }
 
-// handle navigation completed event
+// handles webview's navigation starting event
+function navigationStartingEvent(evt) {
+    // if the url to navigate to matches any of the rules in the external whitelist, open it outside de app
+    _externalWhiteList.forEach(function (rule) {
+        if (rule.test(evt.url)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            console.log("Popping out URL: " + evt.url);
+            Windows.System.Launcher.launchUriAsync(new Windows.Foundation.Uri(evt.url));
+        }
+    });
+}
+
+// handles webview's navigation completed event
 function navigationCompletedEvent(evt) {
     if (evt.uri && evt.uri !== "") {
         if (evt.isSuccess) {
@@ -46,7 +61,7 @@ function navigationCompletedEvent(evt) {
     }
 }
 
-// handle network connectivity change events
+// handles network connectivity change events
 function connectivityEvent(evt) {
     console.log('Received a network connectivity change notification. The device is currently ' + evt.type + '.');
     if (_enableOfflineSupport) {
@@ -88,6 +103,40 @@ function configureOfflineSupport(offlinePage) {
             document.addEventListener('offline', connectivityEvent, false);
             document.addEventListener('online', connectivityEvent, false);
         });
+}
+
+// escapes regular expression reserved symbols
+function escapeRegex(str) {
+    return ("" + str).replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
+}    
+
+// converts a string pattern to a regular expression
+function convertPatternToRegex(pattern, excludeLineStart, excludeLineEnd) {
+    var isNot = (pattern[0] == '!');
+    if (isNot) { pattern = pattern.substr(1) };
+
+    var regexBody = WAT.escapeRegex(pattern);
+
+    excludeLineStart = !!excludeLineStart;
+    excludeLineEnd = !!excludeLineEnd;
+
+    regexBody = regexBody.replace(/\\\?/g, ".?").replace(/\\\*/g, ".*?");
+    if (isNot) { regexBody = "((?!" + regexBody + ").)*"; }
+    if (!excludeLineStart) { regexBody = "^" + regexBody; }
+    if (!excludeLineEnd) { regexBody += "$"; }
+
+    return new RegExp(regexBody);
+}
+
+// initializes an array of the external access rules defined in the manifest
+function configureExternalWhiteList(manifest) {
+    if (manifest && manifest.hap_urlAccess && manifest.hap_urlAccess.length) {
+        manifest.hap_urlAccess.forEach(function (rule) {
+            if (rule.external) {
+                _externalWhiteList.push(convertPatternToRegex(rule));
+            }
+        });
+    }
 }
 
 module.exports = {
@@ -147,6 +196,10 @@ cordova.commandProxy.add('HostedWebApp', module.exports);
 
 module.exports.loadManifest(
     function (manifest) {
-        _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
         configureOfflineSupport('offline.html');
+        configureExternalWhiteList(manifest);
+        _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
     });
+});
+
+});
