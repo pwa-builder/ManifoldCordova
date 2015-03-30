@@ -1,4 +1,4 @@
-cordova.define("com.microsoft.hostedwebapp.HostedWebAppPluginProxy", function(require, exports, module) { var _manifest;
+var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
@@ -150,6 +150,7 @@ module.exports = {
                 Windows.Storage.FileIO.readTextAsync(file).then(function (data) {
                     try {
                         _manifest = JSON.parse(data);
+                        cordova.fireDocumentEvent("manifestLoaded", { manifest: _manifest });
                         if (successCallback) {
                             successCallback(_manifest);
                         }
@@ -200,4 +201,3 @@ module.exports.loadManifest(
         configureExternalWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
     });
-});
