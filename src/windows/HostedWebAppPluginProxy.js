@@ -1,4 +1,4 @@
-﻿var _manifest;
+cordova.define("com.microsoft.hostedwebapp.HostedWebAppPluginProxy", function(require, exports, module) { var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
@@ -38,11 +38,11 @@ function configureHost(url, zOrder, display) {
 function navigationStartingEvent(evt) {
     // if the url to navigate to matches any of the rules in the external whitelist, open it outside de app
     _externalWhiteList.forEach(function (rule) {
-        if (rule.test(evt.url)) {
-            e.stopImmediatePropagation();
-            e.preventDefault();
-            console.log("Popping out URL: " + evt.url);
-            Windows.System.Launcher.launchUriAsync(new Windows.Foundation.Uri(evt.url));
+        if (rule.test(evt.uri)) {
+            evt.stopImmediatePropagation();
+            evt.preventDefault();
+            console.log("Popping out URL: " + evt.uri);
+            Windows.System.Launcher.launchUriAsync(new Windows.Foundation.Uri(evt.uri));
         }
     });
 }
@@ -108,14 +108,14 @@ function configureOfflineSupport(offlinePage) {
 // escapes regular expression reserved symbols
 function escapeRegex(str) {
     return ("" + str).replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
-}    
+}
 
 // converts a string pattern to a regular expression
 function convertPatternToRegex(pattern, excludeLineStart, excludeLineEnd) {
     var isNot = (pattern[0] == '!');
     if (isNot) { pattern = pattern.substr(1) };
 
-    var regexBody = WAT.escapeRegex(pattern);
+    var regexBody = escapeRegex(pattern);
 
     excludeLineStart = !!excludeLineStart;
     excludeLineEnd = !!excludeLineEnd;
@@ -123,7 +123,7 @@ function convertPatternToRegex(pattern, excludeLineStart, excludeLineEnd) {
     regexBody = regexBody.replace(/\\\?/g, ".?").replace(/\\\*/g, ".*?");
     if (isNot) { regexBody = "((?!" + regexBody + ").)*"; }
     if (!excludeLineStart) { regexBody = "^" + regexBody; }
-    if (!excludeLineEnd) { regexBody += "$"; }
+    if (!excludeLineEnd) { regexBody += "\/?$"; }
 
     return new RegExp(regexBody);
 }
@@ -133,7 +133,7 @@ function configureExternalWhiteList(manifest) {
     if (manifest && manifest.hap_urlAccess && manifest.hap_urlAccess.length) {
         manifest.hap_urlAccess.forEach(function (rule) {
             if (rule.external) {
-                _externalWhiteList.push(convertPatternToRegex(rule));
+                _externalWhiteList.push(convertPatternToRegex(rule.url));
             }
         });
     }
@@ -200,3 +200,4 @@ module.exports.loadManifest(
         configureExternalWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
     });
+});
