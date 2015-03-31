@@ -31,9 +31,10 @@
 
         <source-file src="src/android/HostedWebApp.java" target-dir="src/com/microsoft/hostedwebapp" />
     </platform>
-  
+
     <!-- windows -->
     <platform name="windows">
+      <hook type="after_prepare" src="scripts/windowsFix.js" />
       <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
         <merges target="" />
       </js-module>

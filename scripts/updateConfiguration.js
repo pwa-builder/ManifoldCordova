@@ -4,6 +4,7 @@ var fs = require('fs'),
     path = require('path'),
     url = require('url'),
     downloader = require('./downloader'),
+    createConfigParser = require('./createConfigParser'),
     pendingTasks = [],
     Q,
     projectRoot,
@@ -73,71 +74,7 @@ function configureParser(context) {
     etree = context.requireCordovaModule('cordova-lib/node_modules/elementtree');
 
     var xml = cordova_util.projectConfig(projectRoot);
-    config = new ConfigParser(xml);
-
-    // set the text for an element
-    config.setElement = function (name, text) {
-        if (text) {
-            var el = this.doc.find(name);
-            if (!el) {
-                var root = this.doc.getroot();
-                el = new etree.SubElement(root, name);
-            }
-
-            el.text = text;
-        }
-    };
-
-    // TODO: replace this
-    config.setAttribute = function (elname, attname, value) {
-        if (value) {
-            var el = this.doc.find(elname);
-            if (!el) {
-                var root = this.doc.getroot();
-                el = new etree.SubElement(root, elname);
-            }
-
-            el.set(attname, value);
-        }
-    };
-    
-    // set the value of a "preference" element
-    config.setPreference = function (name, value) {
-        if (value) {
-            var el = this.doc.find('preference[@name=\'' + name + '\']');
-            if (!el) {
-                var root = this.doc.getroot();
-                el = new etree.SubElement(root, 'preference');
-                el.set('name', name);
-            }
-
-            el.set('value', value);
-        }
-    };
-
-    // get all elements with the specified name
-    config.getElements = function (name) {
-        return this.doc.findall(name);
-    };
-    
-    // remove all elements from the document matching the specified XPath expression
-    config.removeElements = function (path){
-        var removeChilds = function (childs, elements) {
-            for(var i=0; i < elements.length; i++){
-                var idx = childs.indexOf(elements[i]);
-                if(idx > -1){                    
-                    childs.splice(idx,1);
-                }
-            }
-
-            childs.forEach(function (child) {
-                removeChilds(child.getchildren(), elements);
-            });                
-        }
-      
-        var elements = this.doc.findall(path);
-        removeChilds(this.doc.getroot().getchildren(), elements);
-    };
+    config = createConfigParser(xml, etree, ConfigParser);
 }
 
 function processAccessRules(manifestRules, scope) {
@@ -148,13 +85,13 @@ function processAccessRules(manifestRules, scope) {
         manifestRules.forEach(function (rule) {
             var element = { "url": rule.url, "external": rule.external === true ? true : false };
             accessList.push(element);
-            
+
             if (rule.external) {
               externalRules = true;
             }
         });
     }
-    
+
     // add the scope rule to the access rules list (as an internal rule)
     if (scope) {
         var element = { "url": scope, "external": false };
@@ -165,31 +102,31 @@ function processAccessRules(manifestRules, scope) {
     if (scope || externalRules) {
         config.removeElements('.//access[@origin=\'*\']');
     }
-    
+
     // Remove previous access rules
     config.removeElements('.//access[@hap-rule=\'yes\']');
-    
+
     // get the android platform section and create it if it does not exist
     var androidRoot = config.doc.find('platform[@name=\'android\']');
     if (!androidRoot) {
         androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
         androidRoot.set('name', 'android');
-    }              
-    
+    }
+
     // add new access rules
     accessList.forEach(function (item) {
         if (item.external) {
-            // add external rule to the android platform section 
+            // add external rule to the android platform section
             var el = new etree.SubElement(androidRoot, 'access');
             el.set('hap-rule','yes');
             el.set('launch-external','yes');
-            el.set('origin', item.url); 
+            el.set('origin', item.url);
         }
         else {
             // add internal rule to the document's root level
             var el = new etree.SubElement(config.doc.getroot(), 'access');
             el.set('hap-rule','yes');
-            el.set('origin', item.url); 
+            el.set('origin', item.url);
         }
     });
 }
