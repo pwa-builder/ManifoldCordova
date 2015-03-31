@@ -190,6 +190,10 @@ module.exports = {
     // disables offline page support
     disableOfflinePage: function () {
         _enableOfflineSupport = false;
+    },
+
+    getWebView: function () {
+      return _mainView;
     }
 }; // exports
 
@@ -200,4 +204,5 @@ module.exports.loadManifest(
         configureOfflineSupport('offline.html');
         configureExternalWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
+        cordova.fireDocumentEvent("webviewCreated", { webView: _mainView });
     });
