@@ -2,8 +2,12 @@
 
 @interface CDVHostedWebApp : CDVPlugin
 
--(void) initialize:(CDVInvokedUrlCommand*)command;
+-(void) loadManifest:(CDVInvokedUrlCommand*)command;
 
--(void) load:(CDVInvokedUrlCommand*)command;
+-(void) getManifest:(CDVInvokedUrlCommand*)command;
+
+-(void) enableOfflinePage:(CDVInvokedUrlCommand*)command;
+
+-(void) disableOfflinePage:(CDVInvokedUrlCommand*)command;
 
 @end

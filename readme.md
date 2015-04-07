@@ -1,4 +1,4 @@
-﻿PRELIMINARY DOCUMENTATION
+﻿<PRELIMINARY DOCUMENTATION
 
 <!---
  license: TBD
@@ -42,7 +42,7 @@ Lastly, since network connectivity is essential to the operation of a hosted web
 ## Installation
 [**NOTE**: These are temporary installation steps until the plugin is published.]
 
-`cordova plugin add https://github.com/southworks.com/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
+`cordova plugin add https://github.com/southworkscom/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
 
 **IMPORTANT**: Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
 
@@ -56,7 +56,7 @@ The plugin hook also handles downloading any icons that are specified in the man
 ## URL Access Rules
 For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. 
 
-Additionally, the manifest uses a proprietary setting named **hap_urlAccess** to define an array of access rules, each one consisting of an _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
+Additionally, the manifest uses a proprietary setting named **hap_urlAccess** to define an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
 
 Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to content referenced within the site, for example, from an external CDN origin hosting its script files. It must also handle the URL access rules that should be launched externally. 
 

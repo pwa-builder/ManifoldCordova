@@ -1,0 +1,7 @@
+{
+  "start_url": "http://wat-docs.azurewebsites.net/",
+  "name": "WAT Documentation",
+	"hap_urlAccess": [
+		{ "url": "http://www.test.com/*" }
+	]
+}
