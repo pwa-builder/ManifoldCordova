@@ -1,5 +1,9 @@
 #import <Cordova/CDVPlugin.h>
 
+#define kCDVHostedWebAppWebViewDidStartLoad @"CDVHostedWebAppWebViewDidStartLoad"
+#define kCDVHostedWebAppWebViewDidFinishLoad @"CDVHostedWebAppWebViewDidFinishLoad"
+#define kCDVHostedWebAppWebViewDidFailLoadWithError @"CDVHostedWebAppWebViewDidFailLoadWithError"
+
 @interface CVDWebViewNotificationDelegate : NSObject <UIWebViewDelegate>
     @property (nonatomic,retain) id<UIWebViewDelegate> wrappedDelegate;
 @end

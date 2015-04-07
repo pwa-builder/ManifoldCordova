@@ -14,14 +14,10 @@
 
 @implementation CVDWebViewNotificationDelegate
 
-static NSString* const CDVHostedWebAppWebViewDidStartLoad = @"CDVHostedWebAppWebViewDidStartLoad";
-static NSString* const CDVHostedWebAppWebViewDidFinishLoad = @"CDVHostedWebAppWebViewDidFinishLoad";
-static NSString* const CDVHostedWebAppWebViewDidFailLoadWithError = @"CDVHostedWebAppWebViewDidFailLoadWithError";
-
 - (void)webViewDidStartLoad:(UIWebView*)theWebView {
     [self.wrappedDelegate webViewDidStartLoad: theWebView];
     
-    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CDVHostedWebAppWebViewDidStartLoad object:theWebView]];
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidStartLoad object:theWebView]];
 }
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
@@ -31,13 +27,13 @@ static NSString* const CDVHostedWebAppWebViewDidFailLoadWithError = @"CDVHostedW
 - (void)webViewDidFinishLoad:(UIWebView *)webView {
     [self.wrappedDelegate webViewDidFinishLoad:webView];
     
-    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CDVHostedWebAppWebViewDidFinishLoad object:webView]];
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidFinishLoad object:webView]];
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
     [self.wrappedDelegate webView:webView didFailLoadWithError:error];
     
-    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CDVHostedWebAppWebViewDidFailLoadWithError object:error]];
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidFailLoadWithError object:error]];
 }
 
 @end
@@ -64,19 +60,19 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     // observe notifications from webview when page starts loading
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(webViewDidStartLoad:)
-                                                 name:CDVHostedWebAppWebViewDidStartLoad
+                                                 name:kCDVHostedWebAppWebViewDidStartLoad
                                                object:nil];
 
     // observe notifications from webview when page starts loading
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(webViewDidFinishLoad:)
-                                                 name:CDVHostedWebAppWebViewDidFinishLoad
+                                                 name:kCDVHostedWebAppWebViewDidFinishLoad
                                                object:nil];
     
     // observe notifications from webview when page fails loading
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(didWebViewFailLoadWithError:)
-                                                 name:CDVHostedWebAppWebViewDidFailLoadWithError
+                                                 name:kCDVHostedWebAppWebViewDidFailLoadWithError
                                                object:nil];
     
     // enable offline support by default
@@ -249,7 +245,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 // Handles notifications from the webview delegate whenever a page starts loading.
 - (void)webViewDidStartLoad:(NSNotification*)notification
 {
-    if ([[notification name] isEqualToString:CDVHostedWebAppWebViewDidStartLoad]) {
+    if ([[notification name] isEqualToString:kCDVHostedWebAppWebViewDidStartLoad]) {
         NSLog (@"Received a navigation start notification.");
         self.failedURL = nil;
     }
@@ -258,7 +254,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 // Handles notifications from the webview delegate whenever a page finishes loading.
 - (void)webViewDidFinishLoad:(NSNotification*)notification
 {
-    if ([[notification name] isEqualToString:CDVHostedWebAppWebViewDidFinishLoad]) {
+    if ([[notification name] isEqualToString:kCDVHostedWebAppWebViewDidFinishLoad]) {
         NSLog (@"Received a navigation completed notification.");
         if (!self.failedURL) {
             [self.offlineView setHidden:YES];
@@ -271,7 +267,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 {
     NSError* error = [notification object];
     
-    if ([[notification name] isEqualToString:CDVHostedWebAppWebViewDidFailLoadWithError]) {
+    if ([[notification name] isEqualToString:kCDVHostedWebAppWebViewDidFailLoadWithError]) {
         NSLog (@"Received a navigation failure notification. error: %@", [error description]);
         if ([error code] == NSURLErrorTimedOut ||
             [error code] == NSURLErrorUnsupportedURL ||
