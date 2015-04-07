@@ -1,5 +1,7 @@
 #import <Cordova/CDVPlugin.h>
 
+#define kManifestLoadedNotification @"kManifestLoadedNotification"
+
 #define kCDVHostedWebAppWebViewDidStartLoad @"CDVHostedWebAppWebViewDidStartLoad"
 #define kCDVHostedWebAppWebViewDidFinishLoad @"CDVHostedWebAppWebViewDidFinishLoad"
 #define kCDVHostedWebAppWebViewDidFailLoadWithError @"CDVHostedWebAppWebViewDidFailLoadWithError"
@@ -8,12 +10,10 @@
     @property (nonatomic,retain) id<UIWebViewDelegate> wrappedDelegate;
 @end
 
-#define kManifestLoadedNotification @"kManifestLoadedNotification"
-
 @interface CDVHostedWebApp : CDVPlugin
 {
-    NSDictionary *manifest;
     CVDWebViewNotificationDelegate *notificationDelegate;
+    NSDictionary *manifest;
 }
 
 @property (nonatomic, strong, readonly) NSDictionary *manifest;
