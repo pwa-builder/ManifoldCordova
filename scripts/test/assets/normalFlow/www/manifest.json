@@ -3,9 +3,11 @@
   "name": "WAT Documentation",
 	"orientation": "landscape",
 	"display": "fullscreen",
-	"scope": "*",
-	"wat_popout": [
-		"http://www.google.com/*",
-		"http://www.facebook.com/*"
+	"scope": "http://wat-docs.azurewebsites.net/*",
+	"hap_urlAccess": [
+		{ "url": "http://ajax.googleapis.com/*" },
+		{ "url": "http://www.test.com/*" },
+		{ "url": "http://wat.codeplex.com", "external": true },
+    { "url": "http://com.example.hello/other", "external": true }
 	]
 }

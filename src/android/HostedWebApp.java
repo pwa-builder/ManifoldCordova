@@ -1,6 +1,5 @@
 package com.microsoft.hostedwebapp;
 
-import android.app.Activity;
 import android.content.res.AssetManager;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,10 +7,10 @@ import android.webkit.WebView;
 import android.widget.LinearLayout;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaWebView;
 
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,25 +23,42 @@ import java.util.Arrays;
  * This class manipulates the Web App W3C manifest.
  */
 public class HostedWebApp extends CordovaPlugin {
+    private static final String DEFAULT_MANIFEST_FILE = "manifest.json";
     private static final String OFFLINE_PAGE = "offline.html";
     private static final String OFFLINE_PAGE_TEMPLATE = "<html><body><div style=\"top:50%%;text-align:center;position:absolute\">%s</div></body></html>";
 
+    private boolean loadingManifest;
     private JSONObject manifestObject;
 
-    private Activity activity;
-    private WebView offlineWebView;
+    private CordovaActivity activity;
+
     private LinearLayout rootLayout;
+    private WebView offlineWebView;
+    private boolean offlineOverlayEnabled;
+
 
     @Override
-    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
-        super.initialize(cordova, webView);
-        this.activity = cordova.getActivity();
+    public void pluginInitialize() {
+        final HostedWebApp me = HostedWebApp.this;
+        this.activity = (CordovaActivity)this.cordova.getActivity();
 
+        // Load default manifest file.
+        this.loadingManifest = true;
+        if (this.assetExists(HostedWebApp.DEFAULT_MANIFEST_FILE)) {
+            try {
+                this.manifestObject = this.loadLocalManifest(HostedWebApp.DEFAULT_MANIFEST_FILE);
+                this.webView.postMessage("hostedWebApp_manifestLoaded", this.manifestObject);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        this.loadingManifest = false;
+
+        // Initialize offline overlay
         this.activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                HostedWebApp me = HostedWebApp.this;
-
                 if (me.rootLayout == null) {
                     me.rootLayout = me.createOfflineRootLayout();
                     me.activity.addContentView(me.rootLayout, me.rootLayout.getLayoutParams());
@@ -61,44 +77,80 @@ public class HostedWebApp extends CordovaPlugin {
                             "text/html",
                             null);
                 }
+
+                me.offlineOverlayEnabled = true;
             }
         });
     }
 
     @Override
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if (action.equals("load")) {
-            AssetManager assetManager = cordova.getActivity().getResources().getAssets();
-            try {
-                String configFilename = args.getString(0);
-                InputStream inputStream = assetManager.open("www/" + configFilename);
-                int size = inputStream.available();
-                byte[] bytes = new byte[size];
-                inputStream.read(bytes);
-                inputStream.close();
-                String jsonString = new String(bytes, "UTF-8");
-                callbackContext.success(jsonString);
-            } catch (IOException e) {
-                callbackContext.error(e.getMessage());
+    public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        final HostedWebApp me = HostedWebApp.this;
+        if (action.equals("getManifest")) {
+            if (this.manifestObject != null) {
+                callbackContext.success(manifestObject.toString());
+            } else {
+                callbackContext.error("Manifest not loaded, load a manifest using loadManifest.");
             }
-        } else if (action.equals("initialize")) {
-            this.manifestObject = args.getJSONObject(0);
-        } else if (action.equals("showOfflineOverlay")) {
-            this.showOfflineOverlay();
-        } else if (action.equals("hideOfflineOverlay")) {
-            this.hideOfflineOverlay();
-        } else {
-            return false;
+
+            return true;
         }
 
-        return true;
+        if (action.equals("loadManifest")) {
+            if (this.loadingManifest) {
+                callbackContext.error("Already loading a manifest");
+            } else if (args.length() == 0) {
+                callbackContext.error("Manifest file name required");
+            } else {
+                final String configFilename = args.getString(0);
+
+                this.loadingManifest = true;
+                this.cordova.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (me.assetExists(configFilename)) {
+                            try {
+                                me.manifestObject = me.loadLocalManifest(configFilename);
+                                me.webView.postMessage("hostedWebApp_manifestLoaded", me.manifestObject);
+                                callbackContext.success(me.manifestObject);
+                            } catch (JSONException e) {
+                                callbackContext.error(e.getMessage());
+                            }
+                        } else {
+                            callbackContext.error("Manifest file not found in folder assets/www");
+                        }
+
+                        me.loadingManifest = false;
+                    }
+                });
+
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+                pluginResult.setKeepCallback(true);
+                callbackContext.sendPluginResult(pluginResult);
+            }
+
+            return true;
+        }
+
+        if (action.equals("enableOfflinePage")) {
+            this.offlineOverlayEnabled = true;
+            return true;
+        }
+
+        if (action.equals("disableOfflinePage")) {
+            this.offlineOverlayEnabled = false;
+            return true;
+        }
+
+        return false;
     }
 
     @Override
     public Object onMessage(String id, Object data) {
         if (id.equals("networkconnection") && data != null) {
-            handleNetworkConnectionChange(data.toString());
+            this.handleNetworkConnectionChange(data.toString());
         }
+
         return null;
     }
 
@@ -148,20 +200,44 @@ public class HostedWebApp extends CordovaPlugin {
     }
 
     private void showOfflineOverlay() {
+        final HostedWebApp me = HostedWebApp.this;
+        if (this.offlineOverlayEnabled) {
+            this.activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (me.rootLayout != null) {
+                        me.rootLayout.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+        }
+    }
+
+    private void hideOfflineOverlay() {
+        final HostedWebApp me = HostedWebApp.this;
         this.activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                rootLayout.setVisibility(View.VISIBLE);
+                if (me.rootLayout != null) {
+                    me.rootLayout.setVisibility(View.INVISIBLE);
+                }
             }
         });
     }
 
-    private void hideOfflineOverlay() {
-        this.activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                rootLayout.setVisibility(View.INVISIBLE);
-            }
-        });
+    private JSONObject loadLocalManifest(String manifestFile) throws JSONException {
+        try {
+            InputStream inputStream = this.activity.getResources().getAssets().open("www/" + manifestFile);
+            int size = inputStream.available();
+            byte[] bytes = new byte[size];
+            inputStream.read(bytes);
+            inputStream.close();
+            String jsonString = new String(bytes, "UTF-8");
+            return new JSONObject(jsonString);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }
