@@ -21,8 +21,8 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 /**
- * This class manipulates the Web App W3C manifest.
- */
+* This class manipulates the Web App W3C manifest.
+*/
 public class HostedWebApp extends CordovaPlugin {
     private static final String DEFAULT_MANIFEST_FILE = "manifest.json";
     private static final String OFFLINE_PAGE = "offline.html";
@@ -111,16 +111,16 @@ public class HostedWebApp extends CordovaPlugin {
                     @Override
                     public void run() {
                         if (me.assetExists(configFilename)) {
-            try {
+                            try {
                                 me.manifestObject = me.loadLocalManifest(configFilename);
                                 me.webView.postMessage("hostedWebApp_manifestLoaded", me.manifestObject);
                                 callbackContext.success(me.manifestObject);
                             } catch (JSONException e) {
-                callbackContext.error(e.getMessage());
-            }
-        } else {
+                                callbackContext.error(e.getMessage());
+                            }
+                        } else {
                             callbackContext.error("Manifest file not found in folder assets/www");
-        }
+                        }
 
                         me.loadingManifest = false;
                     }
@@ -178,6 +178,10 @@ public class HostedWebApp extends CordovaPlugin {
         return null;
     }
 
+  public JSONObject getManifest() {
+    return this.manifestObject;
+  }
+
     private boolean assetExists(String asset) {
         final AssetManager assetManager = this.activity.getResources().getAssets();
         try {
@@ -230,13 +234,13 @@ public class HostedWebApp extends CordovaPlugin {
     private void showOfflineOverlay() {
         final HostedWebApp me = HostedWebApp.this;
         if (this.offlineOverlayEnabled) {
-        this.activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
+            this.activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
                     if (me.rootLayout != null) {
                         me.rootLayout.setVisibility(View.VISIBLE);
-            }
                 }
+            }
         });
     }
     }
@@ -248,7 +252,7 @@ public class HostedWebApp extends CordovaPlugin {
             public void run() {
                 if (me.rootLayout != null) {
                     me.rootLayout.setVisibility(View.INVISIBLE);
-            }
+                }
             }
         });
     }
