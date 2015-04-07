@@ -16,6 +16,11 @@ var logger = {
     if (process.env.NODE_ENV !== 'test') {
       console.log.apply(this, arguments)
     }
+  },
+  warn: function() {
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn.apply(this, arguments)
+    }
   }
 };
 
@@ -53,12 +58,11 @@ function getManifestIcons(manifest) {
             pendingTasks.push(deferral.promise);
             downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
                 if (err) {
-                    console.error('Error downloading icon file: ' + imageUrl + '\n' + err);
-                    deferral.reject(err);
+                    logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
                     return;
                 }
 
-                console.log('Downloaded icon file: ' + data.path);
+                logger.log('Downloaded icon file: ' + data.path);
                 deferral.resolve(data);
             });
         });
