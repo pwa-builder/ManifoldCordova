@@ -42,7 +42,7 @@ Lastly, since network connectivity is essential to the operation of a hosted web
 ## Installation
 > **Note:** These are temporary installation steps until the plugin is published.
 
-`cordova plugin add https://github.com/southworkscom/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
+`cordova plugin add https://github.com/manifoldjs/ManifoldCordova.git`
 
 > **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
 
@@ -70,7 +70,7 @@ The plugin enables using content hosted in a web site inside a Cordova applicati
 	> **Note:** You can find a sample manifest file at **/dev/cordovaApps/assets/manifest.json** in this repository. This sample manifest references the http://wat-docs.azurewebsites.net site. 
  
 1. Add the **Hosted Web Application** plugin to the project.  
-	`cordova plugin add https://github.com/southworkscom/meteorite.git#:/dev/cordovaApps/plugins/com.microsoft.hostedwebapp`
+	`cordova plugin add https://github.com/manifoldjs/ManifoldCordova.git`
 
 	> **Note:** These are temporary installation steps until the plugin is published.
 
