@@ -59,12 +59,12 @@ var downloadImage = function (inputUri, downloadDir, callback) {
 
     // If not OK or Not Modified, throw error
     if ([200, 304].indexOf(res.statusCode) === -1) {
-      return callback(new Error('Invalid status code'))
+      return callback(new Error('Invalid status code: ' + res.statusCode))
     }
 
     // If Not Modified, ignore
     if (res.statusCode === 304) {
-      return callback(undefined, { path : filePath });
+      return callback(undefined, { 'path': filePath, 'statusCode': res.statusCode });
     }
 
     // If not an image, throw error
@@ -75,7 +75,7 @@ var downloadImage = function (inputUri, downloadDir, callback) {
     // Else save
     res.pipe(fs.createWriteStream(filePath))
        .on('close', function () {
-         return callback(undefined, { path : filePath })
+         return callback(undefined, { 'path': filePath, 'statusCode': res.statusCode })
        });
   }).on('error', function(err) {
     return callback(err);
