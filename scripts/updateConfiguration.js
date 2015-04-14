@@ -24,29 +24,36 @@ var logger = {
   }
 };
 
-function ensurePathExists(path, cb) {
-    try {
-        fs.mkdirSync(path);
+function ensurePathExists(pathName, callback) {
+  fs.mkdir(pathName, function (err) {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        return ensurePathExists(path.dirname(pathName), function (err) {
+          if (err && callback) {
+            return callback && callback(err);
+          }
+          
+          fs.mkdir(pathName, function (err) {
+            if (err && err.code === 'EEXIST') { err = undefined; }
+            callback && callback(err);
+          });
+        });
+      } else if (err.code === 'EEXIST') {
+        err = undefined;
+      }
     }
-    catch (err) {
-        if (err.code != 'EEXIST') {
-            throw "Error creating directory at: " + path;
-        }
-    }
-}
+
+    callback && callback(err);
+  });
+};
 
 // normalize icon list and download to res folder
 function getManifestIcons(manifest) {
     var iconList = [];
     if (manifest.icons && manifest.icons instanceof Array) {
-        var resPath = path.join(projectRoot, 'res');
-        ensurePathExists(resPath);
-        var iconsPath = path.join(resPath, 'icons');
-        ensurePathExists(iconsPath);
-
         manifest.icons.forEach(function (icon) {
             var imageUrl = url.resolve(manifest.start_url, icon.src);
-            icon.src = url.resolve('res/icons/', path.basename(icon.src));
+            icon.src = url.parse(imageUrl).pathname;
             var sizes = icon.sizes.toLowerCase().split(' ');
             sizes.forEach(function (iconSize) {
                 var dimensions = iconSize.split('x');
@@ -56,14 +63,27 @@ function getManifestIcons(manifest) {
 
             var deferral = new Q.defer();
             pendingTasks.push(deferral.promise);
-            downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
-                if (err) {
-                    logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
-                } else {
-                    logger.log('Downloaded icon file: ' + data.path);
-                }
-                deferral.resolve(data);
-            });
+            var iconsPath = path.dirname(path.join(projectRoot, icon.src));
+            ensurePathExists(iconsPath, function(err) {
+              if (err && err.code !== 'EEXIST') {
+                return logger.error("ERROR: Failed to create directory at: " + iconsPath + ' - ' + err.message);
+              }
+
+              downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
+                  if (err) {
+                      var localPath = path.join(iconsPath, path.basename(icon.src));
+                      if (!fs.existsSync(localPath)) {
+                        logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
+                      }
+                  } else {
+                    if (data && data.statusCode !== 304) {
+                      logger.log('Downloaded icon file: ' + data.path);
+                    }
+                  }
+
+                  deferral.resolve(data);
+              });
+            }); 
         });
     }
 
@@ -350,33 +370,51 @@ module.exports = function (context) {
     configureParser(context);
 
     // read W3C manifest
-    var manifestPath = path.join(projectRoot, 'www', 'manifest.json');
-    var manifestJson = fs.readFileSync(manifestPath).toString().replace(/^\uFEFF/, '');
-    var manifest = JSON.parse(manifestJson);
+    var task = Q.defer();
+    pendingTasks.push(task.promise);
+    var manifestPath = path.join(projectRoot, 'manifest.json');
+    fs.readFile(manifestPath, function (err, data) {
+      if (err) {
+        logger.error('ERROR: Failed to read manifest in at \'' + manifestPath + '\'.');
+        return task.reject(err);
+      }
 
-    // update name, start_url, orientation, and fullscreen from manifest
-    if (manifest.name) {
-      config.setName(manifest.name);
-    }
+      var manifestJson = data.toString().replace(/^\uFEFF/, '');
+      var appManifestPath = path.join(projectRoot, 'www', 'manifest.json');
+      fs.writeFile(appManifestPath, manifestJson, function (err) {
+        if (err) {
+          logger.error('ERROR: Failed to copy manifest to \'www\' folder.');
+          return task.reject(err);
+        }
 
-    config.setAttribute('content', 'src', manifest.start_url);
-    config.setPreference('Orientation', manifest.orientation);
-    if (manifest.display) {
-        config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
-    }
+        var manifest = JSON.parse(manifestJson);
 
-    // configure access rules
-    processAccessRules(manifest.hap_urlAccess, manifest.scope);
+        // update name, start_url, orientation, and fullscreen from manifest
+        if (manifest.name) {
+          config.setName(manifest.name);
+        }
 
-    // configure manifest icons
-    var manifestIcons = getManifestIcons(manifest);
-    processiOSIcons(manifestIcons);
-    processAndroidIcons(manifestIcons);
-    processWindowsIcons(manifestIcons);
-    processWindowsPhoneIcons(manifestIcons);
+        config.setAttribute('content', 'src', manifest.start_url);
+        config.setPreference('Orientation', manifest.orientation);
+        if (manifest.display) {
+          config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
+        }
 
-    // save the updated configuration
-    config.write();
+        // configure access rules
+        processAccessRules(manifest.hap_urlAccess, manifest.scope);
+
+        // configure manifest icons
+        var manifestIcons = getManifestIcons(manifest);
+        processiOSIcons(manifestIcons);
+        processAndroidIcons(manifestIcons);
+        processWindowsIcons(manifestIcons);
+        processWindowsPhoneIcons(manifestIcons);
+
+        // save the updated configuration
+        config.write();
+        task.resolve();
+      });
+    });
 
     return Q.all(pendingTasks);
 }
