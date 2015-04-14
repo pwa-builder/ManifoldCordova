@@ -66,19 +66,19 @@ function getManifestIcons(manifest) {
             var iconsPath = path.dirname(path.join(projectRoot, icon.src));
             ensurePathExists(iconsPath, function(err) {
               if (err && err.code !== 'EEXIST') {
-                return logger.error("WARNING: Error creating directory at: " + iconsPath + ' - ' + err.message);
+                return logger.error("ERROR: Failed to create directory at: " + iconsPath + ' - ' + err.message);
               }
 
               downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
                   if (err) {
                       var localPath = path.join(iconsPath, path.basename(icon.src));
                       if (!fs.existsSync(localPath)) {
-                        return logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
+                        logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
                       }
-                  }
-
-                  if (data && data.statusCode !== 304) {
-                    logger.log('Downloaded icon file: ' + data.path);
+                  } else {
+                    if (data && data.statusCode !== 304) {
+                      logger.log('Downloaded icon file: ' + data.path);
+                    }
                   }
 
                   deferral.resolve(data);
