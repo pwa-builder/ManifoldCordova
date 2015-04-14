@@ -52,7 +52,9 @@ function navigationCompletedEvent(evt) {
     if (evt.uri && evt.uri !== "") {
         if (evt.isSuccess) {
             _lastKnownLocationFailed = false;
-            _offlineView.style.display = 'none';
+            if (_offlineView) {
+                _offlineView.style.display = 'none';
+            }
         } else {
             _lastKnownLocationFailed = true;
         }
