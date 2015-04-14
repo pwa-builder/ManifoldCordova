@@ -59,10 +59,9 @@ function getManifestIcons(manifest) {
             downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
                 if (err) {
                     logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
-                    return;
+                } else {
+                    logger.log('Downloaded icon file: ' + data.path);
                 }
-
-                logger.log('Downloaded icon file: ' + data.path);
                 deferral.resolve(data);
             });
         });
