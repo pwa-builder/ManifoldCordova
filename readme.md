@@ -96,17 +96,43 @@ The plugin implements a basic offline feature that will show an offline page whe
 1. Optionally, replace the default offline UI by adding a new page with the content to be shown while in offline mode. Name the page **offline.html** and place it in the **www** folder of the project.
 
 ### Icons and Splash Screens
-The plugin uses any icons specified in the W3C manifest to configure the Cordova application. However, specifying icons in the manifest is not mandatory. If the W3C manifest does not specify any, the application will continue to use the default Cordova icon set or you can enter icon and splash elements manually in the **config.xml** file and they will be used instead. However, be aware that the plugin does replace any such elements if it finds an icon in the manifest that matches its size. Typically, a manifest entries reference icons hosted by the target site itself. The plugin takes care of downloading the corresponding files and copies them to the correct locations in the project.
+The plugin uses any icons specified in the W3C manifest to configure the Cordova application. However, specifying icons in the manifest is not mandatory. If the W3C manifest does not specify any, the application will continue to use the default Cordova icon set or you can enter icon and splash elements manually in the **config.xml** file and they will be used instead. However, be aware that the plugin does replace any such elements if it finds an icon in the manifest that matches its size. Typically, manifest entries reference icons hosted by the target site itself and should reference suitable icons for each platform supported by the application, as described in the [W3C spec](http://www.w3.org/2008/webapps/manifest/#icon-object-and-its-members). The plugin takes care of downloading the corresponding files and copies them to the correct locations in the project.
 
-To test the plugin's icon and splash screen support, you need to update the manifest to reference suitable icons for each platform supported by the application, as described in the [W3C spec](http://www.w3.org/2008/webapps/manifest/#icon-object-and-its-members). In this repository, you can find a sample manifest at **/sandbox/cordova-icons/www/manifest.json** that uses absolute URLs to reference icon files stored locally even though the **start_url** member of the manifest points to a remote site (http://wat-docs.azurewebsites.net). You can, of course, replace the starting URL in this manifest with a site of your preference as well as replace the image files in your local disk with appropriate icons and splash screens for the chosen site. This sample is intended for testing sites that do not yet publish their own icon files. To use it successfully, before you build (or prepare) your Cordova project, you need to launch a local web server to listen for requests from the plugin hook to download the local files, as described below.
+When you run **cordova prepare**, the plugin will download from the hosted site all image assets in the manifest, if they are available, and it will store them inside the Cordova project using their relative paths as specified in the manifest. You can add any icons missing from the site or replace any icons that were downloaded by simply copying them to the correct location inside the project always making sure that they match the relative path in the manifest. Once the images are in place, building the project will copy the icons to each platform specific folder at the correct locations.
 
-1. Open a command prompt and go to the  **/sandbox/cordova-icons** directory in this repository.
+For example, the following manifest references icons from the _/resources_ path of the site, for example, _/resources/android/icons/icon-36-ldpi.png_. The plugin expects the corresponding icon file to be stored in the same path relative to the root of the Cordova project.
 
-1. Run the node.js script in this folder to launch a local web server that serves the icon files stored in the **/sandbox/cordova-icons/www** directory and listens at  **http://localhost:8080/**.  
-
-	`node site.js`
-
-1. Now, build your project and verify that the icon files are copied to the correct folders for each platform.
+<pre>
+{
+    "name": "Super Racer 2000",
+    "short_name": "Racer2K",
+    "icons": [
+        {
+            "src": "/resources/android/icons/icon-36-ldpi.png",
+            "sizes": "36x36"
+        },
+        {
+            "src": "/resources/android/icons/icon-48-mdpi.png",
+            "sizes": "48x48"
+        },
+        ...
+        {
+            "src": "/resources/ios/icons/icon-40-2x.png",
+            "sizes": "80x80"
+        },
+        ...
+        {
+            "src": "/resources/windows/icons/Square44x44Logo.scale-240.png",
+            "sizes": "106x106"
+        },
+        ...
+    ],
+    "scope": "*",
+    "start_url": "http://wat-docs.azurewebsites.net/",
+    "display": "fullscreen",
+    "orientation": "portrait"
+}
+</pre>
 
 ### URL Access Rules
 For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **hap_urlAccess** that defines an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
