@@ -32,7 +32,7 @@ function ensurePathExists(pathName, callback) {
           if (err && callback) {
             return callback && callback(err);
           }
-          
+
           fs.mkdir(pathName, function (err) {
             if (err && err.code === 'EEXIST') { err = undefined; }
             callback && callback(err);
@@ -83,7 +83,7 @@ function getManifestIcons(manifest) {
 
                   deferral.resolve(data);
               });
-            }); 
+            });
         });
     }
 
@@ -395,7 +395,26 @@ module.exports = function (context) {
         }
 
         config.setAttribute('content', 'src', manifest.start_url);
-        config.setPreference('Orientation', manifest.orientation);
+        config.setPreference('Orientation', (function(orientation){
+          // map W3C manifest orientation options to Cordova orientation options
+          switch (orientation){
+            case "any":
+            case "natural":
+            return "default";
+
+            case "landscape":
+            case "landscape-primary":
+            case "landscape-secondary":
+            return "landscape";
+
+            case "portrait":
+            case "portrait-primary":
+            case "portrait-secondary":
+            return "portrait";
+          }
+
+        })(manifest.orientation));
+
         if (manifest.display) {
           config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
         }
