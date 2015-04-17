@@ -16,8 +16,8 @@ function configureHost(url, zOrder, display) {
     style.top = 0;
     style.left = 0;
     style.zIndex = zOrder;
-    style.width = window.innerWidth + 'px';
-    style.height = window.innerHeight + 'px';
+    style.width = '100%';
+    style.height = '100%';
     if (display) {
         style.display = display;
     }
