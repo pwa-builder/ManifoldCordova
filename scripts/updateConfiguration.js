@@ -21,6 +21,11 @@ var logger = {
     if (process.env.NODE_ENV !== 'test') {
       console.warn.apply(this, arguments)
     }
+  },
+  error: function() {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error.apply(this, arguments)
+    }
   }
 };
 
@@ -32,7 +37,7 @@ function ensurePathExists(pathName, callback) {
           if (err && callback) {
             return callback && callback(err);
           }
-          
+
           fs.mkdir(pathName, function (err) {
             if (err && err.code === 'EEXIST') { err = undefined; }
             callback && callback(err);
@@ -83,7 +88,7 @@ function getManifestIcons(manifest) {
 
                   deferral.resolve(data);
               });
-            }); 
+            });
         });
     }
 
