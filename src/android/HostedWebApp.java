@@ -1,4 +1,4 @@
-package com.microsoft.hostedwebapp;
+package com.manifoldjs.hostedwebapp;
 
 import android.content.res.AssetManager;
 import android.view.View;
