@@ -21,8 +21,6 @@ var appxManifests = [
 ];
 
 var createElement = function (el, rotations, prefix) {
-  console.log(etree);
-
   var rotationEl = etree.SubElement(el, prefix + "InitialRotationPreference");
   rotations.forEach(function(rotation, index, array){
     // create rotation preference element
@@ -87,7 +85,6 @@ var loadManifestRotations = function () {
   var manifestJson = fs.readFileSync(manifestPath).toString().replace(/^\uFEFF/, '');
   var manifest = JSON.parse(manifestJson);
   var windowsRotations = mapToWindowsRotation(manifest.orientation);
-  console.log(windowsRotations);
   return windowsRotations;
 };
 
@@ -117,6 +114,7 @@ module.exports = function (context) {
         var el = parsedAppManifest.findall(elementPath)[0];
         if (el) {
             // create InitialRotationPreference
+            console.log("creating InitialRotiationPreference element in " + val.name);
             createElement(el, rotations, val.elementPrefix);
         }
 
