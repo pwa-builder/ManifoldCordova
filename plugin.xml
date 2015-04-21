@@ -34,11 +34,16 @@
 
     <!-- windows -->
     <platform name="windows">
+      <hook type="before_prepare" src="scripts/windowsOrientationFix.js" />
+
       <hook type="after_prepare" src="scripts/windowsFix.js" />
       <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
         <merges target="" />
       </js-module>
+
+
     </platform>
+
 
   <!-- ios -->
   <platform name="ios">
