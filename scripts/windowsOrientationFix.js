@@ -20,13 +20,15 @@ var appxManifests = [
   }
 ];
 
-var createElement = function (el, rotations, prefix) {
+var createElement = function (el, orientations, prefix) {
   var rotationEl = etree.SubElement(el, prefix + "InitialRotationPreference");
-  rotations.forEach(function(rotation, index, array){
+
+  for (var i = 0; i < orientations.length; i++){
     // create rotation preference element
-    var rotationSub = etree.SubElement(rotationEl, prefix + ":Rotation");
-    rotationSub.attrib["Preference"] = rotation;
-  });
+    console.log("create Rotation element for " + orientations[i]);
+    var orientationsub = etree.SubElement(rotationEl, prefix + "Rotation");
+    orientationsub.attrib["Preference"] = orientations[i];
+  }
 };
 
 var logger = {
@@ -37,68 +39,64 @@ var logger = {
   }
 };
 
-var mapToWindowsRotation = function (configRotation) {
-  var rotations = [];
+var mapToWindowsOrientation = function (configOrientation) {
+  var orientations = [];
 
-  switch (configRotation) {
+  switch (configOrientation) {
     case "portrait":
-    rotations.push("portrait");
-    rotations.push("portraitFlipped");
+    orientations.push("portraitFlipped");
+    orientations.push("portrait");
     break;
 
     case "portrait-primary":
-    rotations.push("portrait");
+    orientations.push("portrait");
     break;
 
     case "portrait-secondary":
-    rotations.push("portraitFlipped");
+    orientations.push("portraitFlipped");
     break;
 
     case "landscape":
-    rotations.push("landscape");
-    rotations.push("landscapeFlipped");
+    orientations.push("landscape");
+    orientations.push("landscapeFlipped");
     break;
 
     case "landscape-primary":
-    rotations.push("landscape");
+    orientations.push("landscape");
     break;
 
     case "landscape-secondary":
-    rotations.push("landscapeFlipped");
+    orientations.push("landscapeFlipped");
     break;
 
     case "any":
     case "natural":
-    rotations.push("portrait");
-    rotations.push("portraitFlipped");
-    rotations.push("landscape");
-    rotations.push("landscapeFlipped");
+    orientations.push("portrait");
+    orientations.push("landscape");
     break;
   }
 
-  return rotations;
+  return orientations;
 };
-
-var loadManifestRotations = function () {
-  // read W3C manifest
-  var manifestPath = 'manifest.json';
-  var manifestJson = fs.readFileSync(manifestPath).toString().replace(/^\uFEFF/, '');
-  var manifest = JSON.parse(manifestJson);
-  var windowsRotations = mapToWindowsRotation(manifest.orientation);
-  return windowsRotations;
-};
-
 
 module.exports = function (context) {
+    // read W3C manifest
+    var manifestPath = 'manifest.json';
+    var manifestJson = fs.readFileSync(manifestPath).toString().replace(/^\uFEFF/, '');
+    var manifest = JSON.parse(manifestJson);
+
+    if (!manifest.orientation){
+      return;
+    }
+
+    var orientations = mapToWindowsOrientation(manifest.orientation);
+    console.log(orientations.length);
     logger.log('Updating Cordova configuration...');
 
     etree = context.requireCordovaModule('cordova-lib/node_modules/elementtree');
 
     // create a parser for the Cordova configuration
     var projectRoot = context.opts.projectRoot;
-
-    // get the selected rotations from config
-    var rotations = loadManifestRotations();
 
     appxManifests.forEach(function(val, index, array) {
       var appManifestPath = path.join(projectRoot, 'platforms', 'windows', val.name);
@@ -115,7 +113,7 @@ module.exports = function (context) {
         if (el) {
             // create InitialRotationPreference
             console.log("creating InitialRotiationPreference element in " + val.name);
-            createElement(el, rotations, val.elementPrefix);
+            createElement(el, orientations, val.elementPrefix);
         }
 
        // save the updated configuration
