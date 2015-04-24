@@ -10,6 +10,11 @@ var _externalWhiteList = [];
 
 // creates a webview to host content
 function configureHost(url, zOrder, display) {
+
+    // workaround to avoid the webview scaling issue
+    var div = document.getElementById("deviceready");
+    div.classList.remove("blink");
+
     var webView = document.createElement(cordova.platformId === 'windows8' ? 'iframe' : 'x-ms-webview');
     var style = webView.style;
     style.position = 'absolute';
