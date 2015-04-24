@@ -171,15 +171,11 @@ function getFormatFromIcon(icon) {
 }
 
 function isValidFormat(icon, validFormats) {
-  console.log('--------isValidFormat-----');
-  console.log(icon);
-  console.log(validFormats);
   if (!validFormats || validFormats.length === 0) {
     return true;
   }
 
   var iconFormat = getFormatFromIcon(icon);
-  console.log(iconFormat);
 
   for (var i = 0; i < validFormats.length; i++) {
     if (validFormats[i].toLowerCase() === iconFormat) {
@@ -364,12 +360,12 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
         "720x1280":"port-xhdpi"
     };
 
-    var validFormats = [
-      'png',
-      'image/png'
-    ];
+var validFormats = [
+  'png',
+  'image/png'
+];
 
-    processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);
+processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);
 }
 
 function processWindowsIcons(manifestIcons) {
