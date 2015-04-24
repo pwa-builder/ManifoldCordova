@@ -62,7 +62,14 @@ function getManifestIcons(manifest) {
             var sizes = icon.sizes.toLowerCase().split(' ');
             sizes.forEach(function (iconSize) {
                 var dimensions = iconSize.split('x');
-                var element = { "src": icon.src, "width": dimensions[0], "height": dimensions[1], "density": icon.density };
+                var element = {
+                  "src": icon.src,
+                  "width": dimensions[0],
+                  "height": dimensions[1],
+                  "density": icon.density,
+                  "type": icon.type
+                };
+
                 iconList.push(element);
             });
 
@@ -159,7 +166,31 @@ function processAccessRules(manifestRules, scope) {
     });
 }
 
-function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSizes) {
+function getFormatFromIcon(icon) {
+  return icon.type || (icon.src && icon.src.split('.').pop());
+}
+
+function isValidFormat(icon, validFormats) {
+  console.log('--------isValidFormat-----');
+  console.log(icon);
+  console.log(validFormats);
+  if (!validFormats || validFormats.length === 0) {
+    return true;
+  }
+
+  var iconFormat = getFormatFromIcon(icon);
+  console.log(iconFormat);
+
+  for (var i = 0; i < validFormats.length; i++) {
+    if (validFormats[i].toLowerCase() === iconFormat) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSizes, validFormats) {
     // get platform section and create it if it does not exist
     var root = config.doc.find('platform[@name=\'' + platform + '\']');
     if (!root) {
@@ -170,6 +201,10 @@ function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSize
     var platformIcons = root.findall('icon');
     var platformScreens = root.findall('splash');
     manifestIcons.forEach(function (element) {
+        if (!isValidFormat(element, validFormats)) {
+          return;
+        }
+
         var size = element.width + "x" + element.height;
         if (splashScreenSizes.indexOf(size) >= 0) {
             for (var screen, i = 0; i < platformScreens.length; i++) {
@@ -206,7 +241,7 @@ function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSize
     });
 }
 
-function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap) {
+function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats) {
     // get platform section and create it if it does not exist
     var root = config.doc.find('platform[@name=\'' + platform + '\']');
     if (!root) {
@@ -217,6 +252,10 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
     var platformIcons = root.findall('icon');
     var platformScreens = root.findall('splash');
     manifestIcons.forEach(function (element) {
+        if (!isValidFormat(element, validFormats)) {
+            return;
+        }
+
         var size = element.width + "x" + element.height;
         var density = dppxToDensityMap[element.density];
         var isScreen = screenSizeToDensityMap[size];
@@ -325,7 +364,12 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
         "720x1280":"port-xhdpi"
     };
 
-    processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap);
+    var validFormats = [
+      'png',
+      'image/png'
+    ];
+
+    processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);
 }
 
 function processWindowsIcons(manifestIcons) {
