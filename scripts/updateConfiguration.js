@@ -465,7 +465,7 @@ module.exports = function (context) {
         }
 
         // configure access rules
-        processAccessRules(manifest.hap_urlAccess, manifest.scope);
+        processAccessRules(manifest.wjs_urlAccess, manifest.scope);
 
         // configure manifest icons
         var manifestIcons = getManifestIcons(manifest);
