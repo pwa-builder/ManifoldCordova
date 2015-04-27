@@ -286,7 +286,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
 -(CDVWhitelist*)configureExternalWhiteList:(NSDictionary*)theManifest
 {
-    NSArray* accessRules = [theManifest objectForKey:@"wjs_urlAccess"];
+    NSArray* accessRules = [theManifest objectForKey:@"mjs_urlAccess"];
     NSMutableArray* externalAccessList = [[NSMutableArray alloc] initWithCapacity:0];
     
     if (accessRules != nil) {

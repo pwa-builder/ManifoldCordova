@@ -135,7 +135,7 @@ For example, the following manifest references icons from the _/resources_ path 
 </pre>
 
 ### URL Access Rules
-For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **wjs_urlAccess** that defines an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
+For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **mjs_urlAccess** that defines an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
 
 Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to external content used within the site, for example, to reference script files hosted by a  CDN origin. It must also handle any URLs that should be launched externally. 
 
@@ -145,7 +145,7 @@ To configure the security policy, the plugin hook maps the scope and URL access 
 <pre>
 ...
    "scope":  "http://www.xyz.com/", 
-   "wjs_urlAccess":  [ 
+   "mjs_urlAccess":  [ 
      { "url": "http//googleapis.com/*" },
      { "url": "http//wat.codeplex.com/", "external": true }
    ]

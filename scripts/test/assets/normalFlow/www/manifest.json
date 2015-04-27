@@ -4,7 +4,7 @@
 	"orientation": "landscape",
 	"display": "fullscreen",
 	"scope": "http://wat-docs.azurewebsites.net/*",
-	"wjs_urlAccess": [
+	"mjs_urlAccess": [
 		{ "url": "http://ajax.googleapis.com/*" },
 		{ "url": "http://wat.codeplex.com", "external": true }
 	]
