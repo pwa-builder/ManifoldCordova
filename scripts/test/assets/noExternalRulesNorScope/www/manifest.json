@@ -3,7 +3,7 @@
   "name": "WAT Documentation",
 	"orientation": "landscape",
 	"display": "fullscreen",
-	"hap_urlAccess": [
+	"mjs_urlAccess": [
 		{ "url": "http://ajax.googleapis.com/*" }
   ]
 }

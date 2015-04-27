@@ -4,7 +4,7 @@
 	"orientation": "landscape",
 	"display": "fullscreen",
 	"scope": "http://wat-docs.azurewebsites.net/*",
-	"hap_urlAccess": [
+	"mjs_urlAccess": [
 		{ "url": "http://ajax.googleapis.com/*" }
   ]
 }

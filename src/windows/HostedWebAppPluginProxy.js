@@ -137,8 +137,8 @@ function convertPatternToRegex(pattern, excludeLineStart, excludeLineEnd) {
 
 // initializes an array of the external access rules defined in the manifest
 function configureExternalWhiteList(manifest) {
-    if (manifest && manifest.hap_urlAccess && manifest.hap_urlAccess.length) {
-        manifest.hap_urlAccess.forEach(function (rule) {
+    if (manifest && manifest.mjs_urlAccess && manifest.mjs_urlAccess.length) {
+        manifest.mjs_urlAccess.forEach(function (rule) {
             if (rule.external) {
                 _externalWhiteList.push(convertPatternToRegex(rule.url));
             }
