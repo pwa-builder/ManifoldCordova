@@ -224,7 +224,8 @@ public class HostedWebApp extends CordovaPlugin {
             this.showOfflineOverlay();
         } else {
             if (this.isConnectionError) {
-                this.webView.reload();
+                String currentUrl = this.webView.getUrl();
+                this.webView.loadUrlIntoView(currentUrl, false);
             } else {
                 this.hideOfflineOverlay();
             }
