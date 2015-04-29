@@ -1,23 +1,31 @@
 {
-  "name": "ManifoldCordova",
-  "version": "1.0.2",
-  "description": "This package is to be used as a workaround to be consumed fromt he ManifestJS tool. Its a Cordova plugin.",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "name": "com-manifoldjs-hostedwebapp",
+  "version": "0.1.0",
+  "description": "Hosted Web App Plugin",
+  "cordova": {
+    "id": "com-manifoldjs-hostedwebapp",
+    "platforms": [
+      "android",
+      "windows",
+      "ios"
+    ]
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/manifoldjs/ManifoldCordova.git"
+    "url": "git+https://github.com/manifoldjs/ManifoldCordova.git"
   },
   "keywords": [
-    "Cordova",
-    "plugin",
+    "cordova",
+    "manifest",
     "hosted",
     "web",
-    "manifest"
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-windows",
+    "cordova-ios"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/manifoldjs/ManifoldCordova/issues"
   },
