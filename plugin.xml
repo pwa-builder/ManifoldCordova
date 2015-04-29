@@ -9,7 +9,7 @@
     <repo></repo>
     <issue></issue>
 
-    <dependency id="org.apache.cordova.network-information" version=">=0.2.15" />
+    <dependency id="cordova-plugin-network-information" version=">=0.2.15" />
 
     <hook type="before_prepare" src="scripts/updateConfiguration.js" />
 
