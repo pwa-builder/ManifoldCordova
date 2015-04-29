@@ -416,7 +416,7 @@ module.exports = function (context) {
 
     // read W3C manifest
     var task = Q.defer();
-    pendingTasks.push(task.promise);
+    
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
@@ -476,9 +476,12 @@ module.exports = function (context) {
 
         // save the updated configuration
         config.write();
-        task.resolve();
+
+        Q.allSettled(pendingTasks).then(function () {
+          task.resolve();
+        });
       });
     });
 
-    return Q.all(pendingTasks);
+    return task.promise;
 }
