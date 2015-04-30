@@ -133,35 +133,27 @@ function processAccessRules(manifestRules, scope) {
         accessList.push(element);
     }
 
-    // If there is a scope rule or there are external rules, remove the wildcard ('*') access rules
-    if (scope || externalRules) {
-        config.removeElements('.//access[@origin=\'*\']');
-    }
-
     // Remove previous access rules
     config.removeElements('.//access[@hap-rule=\'yes\']');
 
-    // get the android platform section and create it if it does not exist
-    var androidRoot = config.doc.find('platform[@name=\'android\']');
-    if (!androidRoot) {
-        androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
-        androidRoot.set('name', 'android');
-    }
-
-    // add new access rules
-    accessList.forEach(function (item) {
+    // Remove "general"" intent whitelist rules
+    config.removeElements('./allow-intent[@href=\'http://*/*\']');
+    config.removeElements('./allow-intent[@href=\'https://*/*\']');
+    config.removeElements('./allow-intent[@href=\'*\']');
+    
+    // add new whitelist rules
+    accessList.forEach(function (item) {     
         if (item.external) {
-            // add external rule to the android platform section
-            var el = new etree.SubElement(androidRoot, 'access');
+            // add intent whitelist rule
+            var el = new etree.SubElement(config.doc.getroot(), 'allow-intent');
             el.set('hap-rule','yes');
-            el.set('launch-external','yes');
-            el.set('origin', item.url);
+            el.set('href', item.url);
         }
         else {
-            // add internal rule to the document's root level
-            var el = new etree.SubElement(config.doc.getroot(), 'access');
+            // add navigation whitelist rule
+            var el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
             el.set('hap-rule','yes');
-            el.set('origin', item.url);
+            el.set('href', item.url);
         }
     });
 }
