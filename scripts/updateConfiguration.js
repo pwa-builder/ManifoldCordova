@@ -133,9 +133,10 @@ function processAccessRules(manifestRules, scope) {
         accessList.push(element);
     }
 
-    // Remove previous access rules
-    config.removeElements('.//access[@hap-rule=\'yes\']');
-
+    // Remove previous whitelist rules
+    config.removeElements('./allow-intent[@hap-rule=\'yes\']');
+    config.removeElements('./allow-navigation[@hap-rule=\'yes\']');
+    
     // Remove "general"" intent whitelist rules
     config.removeElements('./allow-intent[@href=\'http://*/*\']');
     config.removeElements('./allow-intent[@href=\'https://*/*\']');
