@@ -3,8 +3,9 @@
     "name": "WAT Documentation",
 	"orientation": "landscape",
 	"display": "fullscreen",
-	"scope": "http://wat-docs.azurewebsites.net/*",
+	"scope": "scope-rule",
 	"mjs_urlAccess": [
-		{ "url": "http://ajax.googleapis.com/*" }
+		{ "url": "internal-rule" },
+		{ "url": "external-rule", "external": true }	
   ]
 }

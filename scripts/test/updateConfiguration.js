@@ -221,69 +221,13 @@ describe('updateConfiguration.js', function (){
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
       assert(content.indexOf('<preference name="Fullscreen" value="true" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-      assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));   
+      assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
     
       done();
     });
   });
 
-  it('Should keep wildcard access rule if scope and external rules not present', function (done){
-    var testDir = path.join(workingDirectory, 'noExternalRulesNorScope');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx).then(function () {
-      var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access origin="*" />') > -1);    
-    
-      done();
-    });
-  });
-
-  it('Should add launch-external attribute to existing access rule', function (done){
-    var testDir = path.join(workingDirectory, 'updateAccessRules');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-      opts : {
-        projectRoot : testDir
-      }
-    };
-    initializeContext(ctx);
-    
-    updateConfiguration(ctx).then(function () {
-      var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') > -1);
-      assert(content.indexOf('<access hap-rule="yes" origin="http://wat.codeplex.com" />') == -1);    
-    
-      done();
-    });
-  });
-  
-  it('Should remove launch-external attribute from existing access rule', function (done){
-    var testDir = path.join(workingDirectory, 'updateAccessRules');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-      opts : {
-        projectRoot : testDir
-      }
-    };
-    initializeContext(ctx);
-    
-    updateConfiguration(ctx).then(function () {
-      var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access hap-rule="yes" origin="http://ajax.googleapis.com/*" />') > -1);
-      assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://ajax.googleapis.com/*" />') == -1);    
-    
-      done();
-    });
-  });
-
-  it('Should keep existing access rule unchanged in config.xml', function (done){
+  it('Should keep existing access rules unchanged in config.xml', function (done){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -295,13 +239,77 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);    
-    
+      assert(content.indexOf('<allow-navigation href="general-navigation-rule" />') > -1);        
+      assert(content.indexOf('<allow-intent href="general-intent-rule" />') > -1); 
+      assert(content.indexOf('<access origin="ios-access-rule" />') > -1); 
+               
       done();
     });
   });
 
-  it('Should add internal access rule from hap access list', function (done){
+  it('Should remove "root" full access rules from config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'fullAccessRules');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<allow-navigation href="http://*/*\" />') === -1);
+      assert(content.indexOf('<allow-navigation href="https://*/*\" />') === -1);
+      assert(content.indexOf('<allow-navigation href="*" />') === -1);
+      assert(content.indexOf('<allow-intent href="https://*/*\" />') === -1);
+      assert(content.indexOf('<allow-intent href="http://*/*\" />') === -1);
+      assert(content.indexOf('<allow-intent href="*" />') === -1);
+      assert(content.indexOf('<access origin="https://*/*\" />') === -1);
+      assert(content.indexOf('<access origin="http://*/*\" />') === -1);
+      
+      done();
+    });
+  });
+
+  it('Should add full access network request whitelist rule for android in config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.replace(/[\t\r\n\s]/g, '').indexOf('<platformname="android"><accesshap-rule="yes"origin="*"/></platform>') > -1);
+      
+      done();
+    });
+  });
+
+  it('Should add access rules for web site domain in config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="http://wat-docs.azurewebsites.net/*" />') > -1);
+      assert(content.replace(/[\t\r\n\s]/g, '').indexOf('<platformname="ios"><accesshap-rule="yes"origin="http://wat-docs.azurewebsites.net/*"/></platform>') > -1);
+      
+      done();
+    });
+  });
+
+  it('Should add navigation whitelist rules from mjs_urlAccess list and scope', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -313,14 +321,15 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access hap-rule="yes" origin="http://ajax.googleapis.com/*" />') > -1);     
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="scope-rule" />') > -1);   
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="internal-rule" />') > -1);   
     
       done();
     });
   });
 
-  it('Should add internal access rule from scope property', function (done){
-    var testDir = path.join(workingDirectory, 'normalFlow');
+  it('Should add intent whitelist rules from mjs_urlAccess list', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
                 opts : {
@@ -331,14 +340,14 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access hap-rule="yes" origin="http://wat-docs.azurewebsites.net/*" />') > -1);    
-    
+      assert(content.indexOf('<allow-intent hap-rule="yes" href="external-rule" />') > -1);   
+  
       done();
     });
   });
 
-  it('Should add external access rule to android section', function (done){
-    var testDir = path.join(workingDirectory, 'normalFlow');
+  it('Should add access rules for ios from mjs_urlAccess list and scope', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
                 opts : {
@@ -349,10 +358,7 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') > -1);
-      assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') > content.indexOf('<platform name="android">'));
-      assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') < content.indexOf('</platform>'));    
-    
+      assert(content.replace(/[\t\r\n\s]/g, '').indexOf('<platformname="ios"><accesshap-rule="yes"origin="http://wat-docs.azurewebsites.net/*"/><accesshap-rule="yes"origin="internal-rule"/><accesshap-rule="yes"origin="scope-rule"/></platform>') > -1);    
       done();
     });
   });
