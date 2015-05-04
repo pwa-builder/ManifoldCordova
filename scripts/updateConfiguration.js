@@ -14,17 +14,17 @@ var fs = require('fs'),
 var logger = {
   log: function () {
     if (process.env.NODE_ENV !== 'test') {
-      console.log.apply(this, arguments)
+      console.log.apply(this, arguments);
     }
   },
   warn: function() {
     if (process.env.NODE_ENV !== 'test') {
-      console.warn.apply(this, arguments)
+      console.warn.apply(this, arguments);
     }
   },
   error: function() {
     if (process.env.NODE_ENV !== 'test') {
-      console.error.apply(this, arguments)
+      console.error.apply(this, arguments);
     }
   }
 };
@@ -112,18 +112,16 @@ function configureParser(context) {
     config = createConfigParser(xml, etree, ConfigParser);
 }
 
-function processAccessRules(manifestRules, scope) {
+function processAccessRules(manifest) {
     // build the list of access rules
-    var externalRules = false;
     var accessList = [];
+    var manifestRules = manifest.mjs_urlAccess;
+    var scope = manifest.scope;
+    var startUrl = manifest.start_url;
     if (manifestRules && manifestRules instanceof Array) {
         manifestRules.forEach(function (rule) {
             var element = { "url": rule.url, "external": rule.external === true ? true : false };
             accessList.push(element);
-
-            if (rule.external) {
-              externalRules = true;
-            }
         });
     }
 
@@ -133,37 +131,81 @@ function processAccessRules(manifestRules, scope) {
         accessList.push(element);
     }
 
-    // If there is a scope rule or there are external rules, remove the wildcard ('*') access rules
-    if (scope || externalRules) {
-        config.removeElements('.//access[@origin=\'*\']');
-    }
-
-    // Remove previous access rules
+    // Remove previous rules
+    config.removeElements('.//allow-intent[@hap-rule=\'yes\']');
+    config.removeElements('.//allow-navigation[@hap-rule=\'yes\']');
     config.removeElements('.//access[@hap-rule=\'yes\']');
-
+    
+    // Remove "full access"" rules
+    config.removeElements('.//allow-intent[@href=\'http://*/*\']');
+    config.removeElements('.//allow-intent[@href=\'https://*/*\']');
+    config.removeElements('.//allow-intent[@href=\'*\']');
+    config.removeElements('.//allow-navigation[@href=\'http://*/*\']');
+    config.removeElements('.//allow-navigation[@href=\'https://*/*\']');
+    config.removeElements('.//allow-navigation[@href=\'*\']');
+    config.removeElements('.//access[@origin=\'http://*/*\']');
+    config.removeElements('.//access[@origin=\'https://*/*\']');
+    config.removeElements('.//access[@origin=\'*\']');
+    
     // get the android platform section and create it if it does not exist
     var androidRoot = config.doc.find('platform[@name=\'android\']');
     if (!androidRoot) {
         androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
         androidRoot.set('name', 'android');
     }
+    
+    // get the ios platform section and create it if it does not exist
+    var iosRoot = config.doc.find('platform[@name=\'ios\']');
+    if (!iosRoot) {
+        iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
+        iosRoot.set('name', 'ios');
+    }
+    
+    var el;
+    
+    // Add "full access" network request whitelist rule for android
+    el = new etree.SubElement(androidRoot, 'access');
+    el.set('origin', '*');
+    el.set('hap-rule','yes');
 
+    // Add rules to allow access to all routes belonging to the domain of the target site
+    var hostUrl;
+    if (startUrl) {
+        var parsedStartUrl = url.parse(startUrl);        
+        hostUrl = startUrl.replace(parsedStartUrl.path, '/');     
+        var domainRule = hostUrl + '*';    
+    
+        el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
+        el.set('hap-rule','yes');
+        el.set('href', domainRule);
+        
+        el = new etree.SubElement(iosRoot, 'access');
+        el.set('hap-rule','yes');
+        el.set('origin', domainRule);
+    }
+    
     // add new access rules
-    accessList.forEach(function (item) {
+    accessList.forEach(function (item) {     
         if (item.external) {
-            // add external rule to the android platform section
-            var el = new etree.SubElement(androidRoot, 'access');
+            // add intent whitelist rule
+            var el = new etree.SubElement(config.doc.getroot(), 'allow-intent');
             el.set('hap-rule','yes');
-            el.set('launch-external','yes');
-            el.set('origin', item.url);
+            el.set('href', item.url);
         }
-        else {
-            // add internal rule to the document's root level
-            var el = new etree.SubElement(config.doc.getroot(), 'access');
-            el.set('hap-rule','yes');
-            el.set('origin', item.url);
+        else {    
+            if (hostUrl && item.url.indexOf(hostUrl) !== 0) {             
+                // add navigation whitelist rule
+                el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
+                el.set('hap-rule','yes');
+                el.set('href', item.url);
+                
+                // add access rule for ios
+                el = new etree.SubElement(iosRoot, 'access');
+                el.set('origin', item.url);
+                el.set('hap-rule','yes');
+            }
         }
-    });
+    });  
 }
 
 function getFormatFromIcon(icon) {
@@ -465,7 +507,7 @@ module.exports = function (context) {
         }
 
         // configure access rules
-        processAccessRules(manifest.mjs_urlAccess, manifest.scope);
+        processAccessRules(manifest);
 
         // configure manifest icons
         var manifestIcons = getManifestIcons(manifest);

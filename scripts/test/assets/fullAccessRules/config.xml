@@ -2,16 +2,21 @@
 <widget id="com.example.hello" version="0.0.1">
   <name>HelloWorld</name>
   <description>
-    A sample Apache Cordova application that responds to the deviceready event.
+      A sample Apache Cordova application that responds to the deviceready event.
   </description>
   <author email="dev@callback.apache.org" href="http://cordova.io">
-    Apache Cordova Team
+      Apache Cordova Team
   </author>
   <content src="index.html" />
   <preference name="Orientation" value="default" />
   <preference name="Fullscreen" value="false" />
+  <access origin="http://*/*" />
+  <access origin="https://*/*" />
   <access origin="*" />  
   <allow-intent href="http://*/*" />
   <allow-intent href="https://*/*" />
-
+  <allow-intent href="*" />  
+  <allow-navigation href="http://*/*" />
+  <allow-navigation href="https://*/*" />
+  <allow-navigation href="*" />
 </widget>

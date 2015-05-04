@@ -8,7 +8,14 @@
       Apache Cordova Team
   </author>
   <content src="index.html" />
-  <access origin="http://com.example.hello/home" />
+  
+  <allow-navigation href="general-navigation-rule" />
+  <allow-intent href="general-intent-rule" />
+  
+  <platform name="ios">
+      <access origin="ios-access-rule" />
+  </platform>
+      
   <preference name="Orientation" value="default" />
   <preference name="Fullscreen" value="true" />
 </widget>
