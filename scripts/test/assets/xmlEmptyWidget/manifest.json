@@ -4,7 +4,7 @@
 	"orientation": "landscape",
 	"display": "fullscreen",
 	"scope": "scope-rule",
-	"mjs_urlAccess": [
+	"mjs_access_whitelist": [
 		{ "url": "internal-rule" },
 		{ "url": "external-rule", "external": true }	
   ]

@@ -309,7 +309,7 @@ describe('updateConfiguration.js', function (){
     });
   });
 
-  it('Should add navigation whitelist rules from mjs_urlAccess list and scope', function (done){
+  it('Should add navigation whitelist rules from mjs_access_whitelist list and scope', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -328,7 +328,7 @@ describe('updateConfiguration.js', function (){
     });
   });
 
-  it('Should add intent whitelist rules from mjs_urlAccess list', function (done){
+  it('Should add intent whitelist rules from mjs_access_whitelist list', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -346,7 +346,7 @@ describe('updateConfiguration.js', function (){
     });
   });
 
-  it('Should add access rules for ios from mjs_urlAccess list and scope', function (done){
+  it('Should add access rules for ios from mjs_access_whitelist list and scope', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {

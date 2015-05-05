@@ -115,7 +115,7 @@ function configureParser(context) {
 function processAccessRules(manifest) {
     // build the list of access rules
     var accessList = [];
-    var manifestRules = manifest.mjs_urlAccess;
+    var manifestRules = manifest.mjs_access_whitelist;
     var scope = manifest.scope;
     var startUrl = manifest.start_url;
     if (manifestRules && manifestRules instanceof Array) {
@@ -135,7 +135,7 @@ function processAccessRules(manifest) {
     config.removeElements('.//allow-intent[@hap-rule=\'yes\']');
     config.removeElements('.//allow-navigation[@hap-rule=\'yes\']');
     config.removeElements('.//access[@hap-rule=\'yes\']');
-    
+
     // Remove "full access"" rules
     config.removeElements('.//allow-intent[@href=\'http://*/*\']');
     config.removeElements('.//allow-intent[@href=\'https://*/*\']');
@@ -146,23 +146,23 @@ function processAccessRules(manifest) {
     config.removeElements('.//access[@origin=\'http://*/*\']');
     config.removeElements('.//access[@origin=\'https://*/*\']');
     config.removeElements('.//access[@origin=\'*\']');
-    
+
     // get the android platform section and create it if it does not exist
     var androidRoot = config.doc.find('platform[@name=\'android\']');
     if (!androidRoot) {
         androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
         androidRoot.set('name', 'android');
     }
-    
+
     // get the ios platform section and create it if it does not exist
     var iosRoot = config.doc.find('platform[@name=\'ios\']');
     if (!iosRoot) {
         iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
         iosRoot.set('name', 'ios');
     }
-    
+
     var el;
-    
+
     // Add "full access" network request whitelist rule for android
     el = new etree.SubElement(androidRoot, 'access');
     el.set('origin', '*');
@@ -171,41 +171,41 @@ function processAccessRules(manifest) {
     // Add rules to allow access to all routes belonging to the domain of the target site
     var hostUrl;
     if (startUrl) {
-        var parsedStartUrl = url.parse(startUrl);        
-        hostUrl = startUrl.replace(parsedStartUrl.path, '/');     
-        var domainRule = hostUrl + '*';    
-    
+        var parsedStartUrl = url.parse(startUrl);
+        hostUrl = startUrl.replace(parsedStartUrl.path, '/');
+        var domainRule = hostUrl + '*';
+
         el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
         el.set('hap-rule','yes');
         el.set('href', domainRule);
-        
+
         el = new etree.SubElement(iosRoot, 'access');
         el.set('hap-rule','yes');
         el.set('origin', domainRule);
     }
-    
+
     // add new access rules
-    accessList.forEach(function (item) {     
+    accessList.forEach(function (item) {
         if (item.external) {
             // add intent whitelist rule
             var el = new etree.SubElement(config.doc.getroot(), 'allow-intent');
             el.set('hap-rule','yes');
             el.set('href', item.url);
         }
-        else {    
-            if (hostUrl && item.url.indexOf(hostUrl) !== 0) {             
+        else {
+            if (hostUrl && item.url.indexOf(hostUrl) !== 0) {
                 // add navigation whitelist rule
                 el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
                 el.set('hap-rule','yes');
                 el.set('href', item.url);
-                
+
                 // add access rule for ios
                 el = new etree.SubElement(iosRoot, 'access');
                 el.set('origin', item.url);
                 el.set('hap-rule','yes');
             }
         }
-    });  
+    });
 }
 
 function getFormatFromIcon(icon) {
@@ -458,7 +458,7 @@ module.exports = function (context) {
 
     // read W3C manifest
     var task = Q.defer();
-    
+
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
