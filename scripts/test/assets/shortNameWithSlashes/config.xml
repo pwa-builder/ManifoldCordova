@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget id="com.example.hello" version="0.0.1">
+  <name>HelloWorld</name>
+  <description>
+    A sample Apache Cordova application that responds to the deviceready event.
+  </description>
+  <author email="dev@callback.apache.org" href="http://cordova.io">
+    Apache Cordova Team
+  </author>
+  <content src="index.html" />
+  <preference name="Orientation" value="default" />
+  <preference name="Fullscreen" value="false" />
+  <access origin="*" />  
+  <allow-intent href="http://*/*" />
+  <allow-intent href="https://*/*" />
+
+</widget>

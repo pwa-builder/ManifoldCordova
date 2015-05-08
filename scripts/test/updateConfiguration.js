@@ -58,8 +58,26 @@ describe('updateConfiguration.js', function (){
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
 
-  it('Should update name with value from manifest.json', function (done){
+  it('Should update name with short_name value from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
+
+    updateConfiguration(ctx).then(function() {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>WAT Docs</name>') > -1);
+      
+      done();
+    });
+  });
+
+  it('Should update name with name value from manifest.json if short_name is missing', function (done){
+    var testDir = path.join(workingDirectory, 'shortNameMissing');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
                 opts : {
@@ -75,7 +93,24 @@ describe('updateConfiguration.js', function (){
       done();
     });
   });
+  
+  it('Should ignore slashes when updating name from manifest.json', function (done) {
+    var testDir = path.join(workingDirectory, 'shortNameWithSlashes');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = {
+                opts : {
+                  projectRoot : testDir
+                }
+              };
+    initializeContext(ctx);
 
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>WAT Docs</name>') > -1);
+      
+      done();
+    });
+  });
 
   it('Should not update name if it is missing in manifest.json', function (done) {
     var testDir = path.join(workingDirectory, 'jsonEmpty');

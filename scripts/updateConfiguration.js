@@ -477,8 +477,10 @@ module.exports = function (context) {
         var manifest = JSON.parse(manifestJson);
 
         // update name, start_url, orientation, and fullscreen from manifest
-        if (manifest.name) {
-          config.setName(manifest.name);
+        if (manifest.short_name) {
+          config.setName(manifest.short_name.replace(/\//g,''));
+        } else if (manifest.name) {
+          config.setName(manifest.name.replace(/\//g,''));
         }
 
         config.setAttribute('content', 'src', manifest.start_url);
