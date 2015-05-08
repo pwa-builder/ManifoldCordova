@@ -436,9 +436,9 @@ module.exports = function (context) {
 
         // update name, start_url, orientation, and fullscreen from manifest
         if (manifest.short_name) {
-          config.setName(manifest.short_name.replace(/\//,''));
+          config.setName(manifest.short_name.replace(/\//g,''));
         } else if (manifest.name) {
-          config.setName(manifest.name.replace(/\//,''));
+          config.setName(manifest.name.replace(/\//g,''));
         }
 
         config.setAttribute('content', 'src', manifest.start_url);
