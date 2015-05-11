@@ -58,7 +58,7 @@ describe('updateConfiguration.js', function (){
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
 
-  it('Should update name with short_name value from manifest.json', function (done){
+  it('Should update name with short_name value (without spaces) from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -70,13 +70,13 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function() {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<name>WAT Docs</name>') > -1);
+      assert(content.indexOf('<name>WATDocs</name>') > -1);
       
       done();
     });
   });
 
-  it('Should update name with name value from manifest.json if short_name is missing', function (done){
+  it('Should update name with name value (without spaces) from manifest.json if short_name is missing', function (done){
     var testDir = path.join(workingDirectory, 'shortNameMissing');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = {
@@ -88,7 +88,7 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function() {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<name>WAT Documentation</name>') > -1);
+      assert(content.indexOf('<name>WATDocumentation</name>') > -1);
       
       done();
     });
@@ -106,7 +106,7 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<name>WAT Docs</name>') > -1);
+      assert(content.indexOf('<name>WATDocs</name>') > -1);
       
       done();
     });
@@ -142,8 +142,8 @@ describe('updateConfiguration.js', function (){
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<name>WAT Documentation</name>') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-      assert(content.indexOf('<name>WAT Documentation</name>') < content.indexOf('</widget>'));
+      assert(content.indexOf('<name>WATDocumentation</name>') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+      assert(content.indexOf('<name>WATDocumentation</name>') < content.indexOf('</widget>'));
       done();
     });
   });
