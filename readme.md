@@ -26,7 +26,7 @@ This plugin enables the creation of a hosted web application from a [W3C manifes
         "density": 2
       }],
   "scope": "/",
-  "start_url": "/racer/start.html",
+  "start_url": "http://www.racer2k.net/start.html",
   "display": "fullscreen",
   "orientation": "landscape",
   "theme_color": "aliceblue"
@@ -44,14 +44,14 @@ Lastly, since network connectivity is essential to the operation of a hosted web
 
 `cordova plugin add https://github.com/manifoldjs/ManifoldCordova.git`
 
-> **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **www** folder of the Cordova application and name it **manifest.json**.
+> **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **root** folder of the Cordova application, alongside **config.xml**, and name it **manifest.json**.
 
 ## Design
 The plugin behavior is mostly implemented at build time by mapping properties in the W3C manifest to standard Cordova settings defined in the **config.xml** file. 
 
 This mapping process is handled by a hook that executes during the **before_prepare** stage of the Cordova build process. The hook updates the **config.xml** file with values obtained from the manifest. 
 
-The plugin hook also handles downloading any icons that are specified in the manifest and copies them to the application’s **res/icons** directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
+The plugin hook also handles downloading any icons that are specified in the manifest and copies them to the application’s directory, using their dimensions, and possibly their pixel density, to classify them as either an icon or a splash screen, as well as determining the platform for which they are suitable (e.g. iOS, Android, Windows, etc.). It uses this information to configure the corresponding icon and splash elements for each supported platform.
 
 ## Getting Started
 
@@ -65,9 +65,9 @@ The plugin enables using content hosted in a web site inside a Cordova applicati
 
 1. Go to the **sampleapp** directory created by the previous command.
 
-1. Download or create a [W3C manifest](http://www.w3.org/2008/webapps/manifest/) describing the website to be hosted by the Cordova application and copy this file to its **www** folder. If necessary, rename the file as **manifest.json**.
+1. Download or create a [W3C manifest](http://www.w3.org/2008/webapps/manifest/) describing the website to be hosted by the Cordova application and copy this file to its **root** folder, alongside **config.xml**. If necessary, rename the file as **manifest.json**.
 
-	> **Note:** You can find a sample manifest file at **/dev/cordovaApps/assets/manifest.json** in this repository. This sample manifest references the http://wat-docs.azurewebsites.net site. 
+	> **Note:** You can find a sample manifest file at the start of this document. 
  
 1. Add the **Hosted Web Application** plugin to the project.  
 	`cordova plugin add https://github.com/manifoldjs/ManifoldCordova.git`
