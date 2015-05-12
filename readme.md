@@ -1,7 +1,5 @@
-﻿PRELIMINARY DOCUMENTATION
-
-<!---
- license: TBD
+﻿<!---
+ license: MIT License
 -->
 
 # Hosted Web Application
@@ -161,38 +159,39 @@ To configure the security policy, the plugin hook maps the scope and URL access 
 ...
 </pre>
 
-## Preferences
-[TBD]
-
 ## Methods
 Even though the following methods are available, it should be pointed out that calling them is not required as the plugin will provide most of its functionality by simply embedding a W3C manifest in the application package.
 
-- **loadManifest**:	Loads the specified W3C manifest.  
+### loadManifest
+Loads the specified W3C manifest.
+ 
+`hostedwebapp.loadManifest(successCallback, errorCallback, manifestFileName)`
+  
+|**Parameter**     |**Description**                                                            |
+|:-----------------|:--------------------------------------------------------------------------|
+|_successCallback_ |A callback that is passed a manifest object.                               |
+|_errorCallback_   |A callback that executes if an error occurs when loading the manifest file.|
+|_manifestFileName_|The name of the manifest file to load.                                     |
 
-	`hostedwebapp.loadManifest(successCallback, errorCallback, manifestFileName)`
+### getManifest
+Returns the currently loaded manifest.
 
-	|**Parameter**     |**Description**                                                            |
-	|------------------|---------------------------------------------------------------------------|
-	|_successCallback_ |A callback that is passed a manifest object.                               |
-	|_errorCallback_   |A callback that executes if an error occurs when loading the manifest file.|
-	|_manifestFileName_|The name of the manifest file to load.                                     |
+`hostedwebapp.getManifest(successCallback, errorCallback)`
 
-- **getManifest**: Returns the currently loaded manifest.
+|**Parameter**     |**Description**                                                            |
+|:-----------------|:--------------------------------------------------------------------------|
+|_successCallback_ |A callback that is passed a manifest object.                               |
+|_errorCallback_   |A callback that executes if a manifest is not currently available.         |
 
-	`hostedwebapp.getManifest(successCallback, errorCallback)`
+### enableOfflinePage
+Enables offline page support.
 
-	|**Parameter**     |**Description**                                                            |
-	|------------------|---------------------------------------------------------------------------|
-	|_successCallback_ |A callback that is passed a manifest object.                               |
-	|_errorCallback_   |A callback that executes if a manifest is not currently available.         |
+`hostedwebapp.enableOfflinePage()`
 
-- **enableOfflinePage**: Enables offline page support.
+### disableOfflinePage
+Disables offline page support.
 
-	`hostedwebapp.enableOfflinePage()`
-
-- **disableOfflinePage**: Disables offline page support.
-
-	`hostedwebapp.disableOfflinePage()`
+`hostedwebapp.disableOfflinePage()`
 
 ## Supported Platforms
 Windows 8.1  
