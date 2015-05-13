@@ -22,6 +22,8 @@
 }
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewShouldStartLoadWithRequest object:request]];
+    
     return [self.wrappedDelegate webView:webView shouldStartLoadWithRequest:request navigationType:navigationType];
 }
 
@@ -291,7 +293,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     
     if (accessRules != nil) {
         for (NSDictionary *accessRule in accessRules) {
-            BOOL isExternal = [accessRule objectForKey:@"external"];
+            BOOL isExternal = [[accessRule objectForKey:@"external"] boolValue];
             if (isExternal) {
                 NSString *url = [accessRule objectForKey:@"url"];
                 if (url != nil) {
@@ -309,7 +311,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     NSURL* url = [request URL];
     
     if ([self.externalWhiteList URLIsAllowed:url]) {
-        [[UIApplication sharedApplication] openURL:[request URL]]; // opens links in webvie	w in Safari
+        [[UIApplication sharedApplication] openURL:[request URL]]; // opens links in webview in Safari
         
         return YES;
     }
