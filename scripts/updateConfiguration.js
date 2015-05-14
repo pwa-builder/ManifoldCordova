@@ -405,6 +405,79 @@ function processWindowsPhoneIcons(manifestIcons) {
     processIconsBySize('wp8', manifestIcons, splashScreenSizes, iconSizes);
 };
 
+function processDefaultIcons() {
+    var androidIconDensities = [
+      'ldpi',
+      'ldpi',
+      'mdpi',
+      'mdpi',
+      'hdpi',
+      'xhdpi',
+      'xxhdpi',
+      'xxxhdpi'
+    ];
+    
+    var androidScreenDensities = [
+      'land-hdpi',
+      'land-ldpi',
+      'land-mdpi',
+      'land-xhdpi',
+      'port-hdpi',
+      'port-ldpi',
+      'port-mdpi',
+      'port-xhdpi'
+    ];
+    
+    var platform = 'android';
+    var baseDir = 'defaultIcons';
+    
+    // get platform section and create it if it does not exist
+    var root = config.doc.find('platform[@name=\'' + platform + '\']');
+    if (!root) {
+        root = etree.SubElement(config.doc.getroot(), 'platform');
+        root.set('name', platform);
+    }
+    
+    var platformIcons = root.findall('icon');
+    var platformScreens = root.findall('splash');
+    
+    androidIconDensities.forEach(function (iconDensity) {
+        for (var icon, i = 0; i < platformIcons.length; i++) {
+            if (iconDensity === platformIcons[i].get('density')) {
+                icon = platformIcons[i];
+                break;
+            }
+        }
+               
+        if (!icon) {
+            var iconSrc = baseDir + '/' + platform + '/' + iconDensity + '.png';
+            var iconsPath = path.dirname(path.join(projectRoot, iconSrc));
+          
+            icon = etree.SubElement(root, 'icon');
+            icon.set('density', iconDensity);
+            icon.set('src', iconSrc); 
+        }
+    });
+    
+    androidScreenDensities.forEach(function (screenDensity) {
+        for (var screen, i = 0; i < platformScreens.length; i++) {
+            if (screenDensity === platformScreens[i].get('density')) {
+                screen = platformScreens[i];
+                break;
+            }
+        }
+        
+        if (!screen) {
+            var screenSrc = baseDir + '/' + platform + '/' + screenDensity + '.png';
+            var screensPath = path.dirname(path.join(projectRoot, screenSrc));
+          
+            screen = etree.SubElement(root, 'splash');
+            screen.set('density', screenDensity);
+            screen.set('src', screenSrc); 
+        }
+    });
+}
+
 module.exports = function (context) {
     logger.log('Updating Cordova configuration from W3C manifest...');
 
@@ -475,6 +548,7 @@ module.exports = function (context) {
         processAndroidIcons(manifestIcons);
         processWindowsIcons(manifestIcons);
         processWindowsPhoneIcons(manifestIcons);
+        processDefaultIcons();
 
         // save the updated configuration
         config.write();
