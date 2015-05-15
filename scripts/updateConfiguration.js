@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env node
 
 var defaultIconsBaseDir = 'defaultImages';
-var defaultIconsBaseUrl = 'https://github.com/manifoldjs/ManifoldJS/blob/default-images/';
+var defaultIconsBaseUrl = 'https://raw.githubusercontent.com/manifoldjs/ManifoldJS/default-images/';
 
 var fs = require('fs'),
     path = require('path'),
