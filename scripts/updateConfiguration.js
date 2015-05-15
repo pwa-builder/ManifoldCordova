@@ -208,6 +208,11 @@ function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSize
         if (!isValidFormat(element, validFormats)) {
           return;
         }
+        
+        // Don't process the icon if the icon file does not exist
+        if (!fs.existsSync(path.join(projectRoot, element.src))) {
+          return;
+        }
 
         var size = element.width + "x" + element.height;
         if (splashScreenSizes.indexOf(size) >= 0) {
@@ -257,6 +262,11 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
     var platformScreens = root.findall('splash');
     manifestIcons.forEach(function (element) {
         if (!isValidFormat(element, validFormats)) {
+            return;
+        }
+        
+        // Don't process the icon if the icon file does not exist
+        if (!fs.existsSync(path.join(projectRoot, element.src))) {
             return;
         }
 
@@ -601,17 +611,20 @@ module.exports = function (context) {
         // configure access rules
         processAccessRules(manifest.mjs_urlAccess, manifest.scope);
 
-        // configure manifest icons
+        // Obtain and download the icons specified in the manidest
         var manifestIcons = getManifestIcons(manifest);
-        processiOSIcons(manifestIcons);
-        processAndroidIcons(manifestIcons);
-        processWindowsIcons(manifestIcons);
-        processWindowsPhoneIcons(manifestIcons);
-
-        // save the updated configuration
-        config.write();
 
         Q.allSettled(pendingTasks).then(function () {
+            
+          // Configure the icons once all icon files are downloaded
+          processiOSIcons(manifestIcons);
+          processAndroidIcons(manifestIcons);
+          processWindowsIcons(manifestIcons);
+          processWindowsPhoneIcons(manifestIcons);
+          
+          // save the updated configuration
+          config.write();
+          
           task.resolve();
         });
       });
