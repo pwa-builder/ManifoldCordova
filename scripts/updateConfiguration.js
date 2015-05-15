@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env node
 
-var defaultIconsBaseDir = 'defaultIcons';
-var defaultIconsBaseUrl = 'https://github.com/manifoldjs/ManifoldCordova/blob/default-images/';
+var defaultIconsBaseDir = 'defaultImages';
+var defaultIconsBaseUrl = 'https://github.com/manifoldjs/ManifoldJS/blob/default-images/';
 
 var fs = require('fs'),
     path = require('path'),
@@ -551,6 +551,7 @@ function processWindowsPhoneIcons(manifestIcons) {
     ];
 
     processIconsBySize('wp8', manifestIcons, splashScreenSizes, iconSizes);
+    processDefaultIconsBySize('wp8', splashScreenSizes, iconSizes);
 };
 
 module.exports = function (context) {
