@@ -1,5 +1,8 @@
 ﻿#!/usr/bin/env node
 
+var defaultIconsBaseDir = 'defaultIcons';
+var defaultIconsBaseUrl = 'https://github.com/manifoldjs/ManifoldCordova/blob/default-images/';
+
 var fs = require('fs'),
     path = require('path'),
     url = require('url'),
@@ -52,6 +55,32 @@ function ensurePathExists(pathName, callback) {
   });
 };
 
+function downloadImage(imageUrl, imagesPath, imageSrc) {
+  var deferral = new Q.defer();
+  pendingTasks.push(deferral.promise);
+  
+  ensurePathExists(imagesPath, function(err) {
+    if (err && err.code !== 'EEXIST') {
+      return logger.error("ERROR: Failed to create directory at: " + imagesPath + ' - ' + err.message);
+    }
+
+    downloader.downloadImage(imageUrl, imagesPath, function (err, data) {
+        if (err) {
+            var localPath = path.join(imagesPath, path.basename(imageSrc));
+            if (!fs.existsSync(localPath)) {
+              logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
+            }
+        } else {
+          if (data && data.statusCode !== 304) {
+            logger.log('Downloaded icon file: ' + data.path);
+          }
+        }
+
+        deferral.resolve(data);
+    });
+  });          
+}
+
 // normalize icon list and download to res folder
 function getManifestIcons(manifest) {
     var iconList = [];
@@ -73,29 +102,9 @@ function getManifestIcons(manifest) {
                 iconList.push(element);
             });
 
-            var deferral = new Q.defer();
-            pendingTasks.push(deferral.promise);
             var iconsPath = path.dirname(path.join(projectRoot, icon.src));
-            ensurePathExists(iconsPath, function(err) {
-              if (err && err.code !== 'EEXIST') {
-                return logger.error("ERROR: Failed to create directory at: " + iconsPath + ' - ' + err.message);
-              }
-
-              downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
-                  if (err) {
-                      var localPath = path.join(iconsPath, path.basename(icon.src));
-                      if (!fs.existsSync(localPath)) {
-                        logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
-                      }
-                  } else {
-                    if (data && data.statusCode !== 304) {
-                      logger.log('Downloaded icon file: ' + data.path);
-                    }
-                  }
-
-                  deferral.resolve(data);
-              });
-            });
+            
+            downloadImage(imageUrl, iconsPath, icon.src);
         });
     }
 
@@ -295,6 +304,128 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
     });
 }
 
+function processDefaultIconsByDensity(platform, screenDensities, iconDensities) {   
+    // get platform section and create it if it does not exist
+    var root = config.doc.find('platform[@name=\'' + platform + '\']');
+    if (!root) {
+        root = etree.SubElement(config.doc.getroot(), 'platform');
+        root.set('name', platform);
+    }
+    
+    var platformIcons = root.findall('icon');
+    var platformScreens = root.findall('splash');
+    
+    iconDensities.forEach(function (iconDensity) {
+        for (var icon, i = 0; i < platformIcons.length; i++) {
+            if (iconDensity === platformIcons[i].get('density')) {
+                icon = platformIcons[i];
+                break;
+            }
+        }
+               
+        if (!icon) {
+            var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconDensity + '.png';
+            var iconsPath = path.dirname(path.join(projectRoot, iconSrc));
+            var iconUrl = url.resolve(defaultIconsBaseUrl, iconSrc);
+            
+            downloadImage(iconUrl, iconsPath, iconSrc);
+            
+            icon = etree.SubElement(root, 'icon');
+            icon.set('hap-default-image', 'yes');
+            icon.set('density', iconDensity);
+            icon.set('src', iconSrc);
+        }
+    });
+    
+    screenDensities.forEach(function (screenDensity) {
+        for (var screen, i = 0; i < platformScreens.length; i++) {
+            if (screenDensity === platformScreens[i].get('density')) {
+                screen = platformScreens[i];
+                break;
+            }
+        }
+        
+        if (!screen) {
+            var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenDensity + '.png';
+            var screensPath = path.dirname(path.join(projectRoot, screenSrc));
+            var screenUrl = url.resolve(defaultIconsBaseUrl, screenSrc);
+ 
+            downloadImage(screenUrl, screensPath, screenSrc);
+          
+            screen = etree.SubElement(root, 'splash');
+            screen.set('hap-default-image', 'yes');
+            screen.set('density', screenDensity);
+            screen.set('src', screenSrc); 
+        }
+    });
+}
+
+function processDefaultIconsBySize(platform, screenSizes, iconSizes) {   
+    // get platform section and create it if it does not exist
+    var root = config.doc.find('platform[@name=\'' + platform + '\']');
+    if (!root) {
+        root = etree.SubElement(config.doc.getroot(), 'platform');
+        root.set('name', platform);
+    }
+    
+    var platformIcons = root.findall('icon');
+    var platformScreens = root.findall('splash');
+    
+    iconSizes.forEach(function (iconSize) {
+        var dimensions = iconSize.split('x');
+        var iconWidth = dimensions[0];
+        var iconHeight = dimensions[1];
+      
+        for (var icon, i = 0; i < platformIcons.length; i++) {
+            if (iconWidth === platformIcons[i].get('width') && iconHeight === platformIcons[i].get('height')) {
+                icon = platformIcons[i];
+                break;
+            }
+        }
+               
+        if (!icon) {
+            var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconSize + '.png';
+            var iconsPath = path.dirname(path.join(projectRoot, iconSrc));
+            var iconUrl = url.resolve(defaultIconsBaseUrl, iconSrc);
+            
+            downloadImage(iconUrl, iconsPath, iconSrc);
+            
+            icon = etree.SubElement(root, 'icon');
+            icon.set('hap-default-image', 'yes');            
+            icon.set('width', iconWidth);
+            icon.set('height', iconHeight);
+            icon.set('src', iconSrc);
+        }
+    });
+    
+    screenSizes.forEach(function (screenSize) {
+        var dimensions = screenSize.split('x');
+        var screenWidth = dimensions[0];
+        var screenHeight = dimensions[1];
+      
+        for (var screen, i = 0; i < platformScreens.length; i++) {
+            if (screenWidth === platformIcons[i].get('width') && screenHeight === platformIcons[i].get('height')) {
+                screen = platformIcons[i];
+                break;
+            }
+        }
+        
+        if (!screen) {
+            var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenSize + '.png';
+            var screensPath = path.dirname(path.join(projectRoot, screenSrc));
+            var screenUrl = url.resolve(defaultIconsBaseUrl, screenSrc);
+ 
+            downloadImage(screenUrl, screensPath, screenSrc);
+          
+            screen = etree.SubElement(root, 'splash');
+            screen.set('hap-default-image', 'yes');
+            screen.set('width', screenWidth);
+            screen.set('height', screenHeight);
+            screen.set('src', screenSrc); 
+        }
+    });
+}
+
 function processiOSIcons(manifestIcons) {
     var iconSizes = [
         "40x40",
@@ -328,6 +459,7 @@ function processiOSIcons(manifestIcons) {
     ];
 
     processIconsBySize('ios', manifestIcons, splashScreenSizes, iconSizes);
+    processDefaultIconsBySize('ios', splashScreenSizes, iconSizes);
 }
 
 function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent) {
@@ -359,13 +491,28 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
         "320x480": "port-mdpi",
         "720x1280":"port-xhdpi"
     };
+    
+    var iconDensities = [];
+    for (var size in iconSizeToDensityMap) {
+        if (iconSizeToDensityMap.hasOwnProperty(size)) {
+          iconDensities.push(iconSizeToDensityMap[size]);
+        }
+    }
 
-var validFormats = [
-  'png',
-  'image/png'
-];
+    var screenDensities = [];
+    for (var size in screenSizeToDensityMap) {
+        if (screenSizeToDensityMap.hasOwnProperty(size)) {
+          iconDensities.push(screenSizeToDensityMap[size]);
+        }
+    }
 
-processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);
+    var validFormats = [
+      'png',
+      'image/png'
+    ];
+    
+    processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);   
+    processDefaultIconsByDensity('android', screenDensities, iconDensities);
 }
 
 function processWindowsIcons(manifestIcons) {
@@ -390,6 +537,7 @@ function processWindowsIcons(manifestIcons) {
     ];
 
     processIconsBySize('windows', manifestIcons, splashScreenSizes, iconSizes);
+    processDefaultIconsBySize('windows', splashScreenSizes, iconSizes);
 };
 
 function processWindowsPhoneIcons(manifestIcons) {
@@ -404,79 +552,6 @@ function processWindowsPhoneIcons(manifestIcons) {
 
     processIconsBySize('wp8', manifestIcons, splashScreenSizes, iconSizes);
 };
-
-function processDefaultIcons() {
-    var androidIconDensities = [
-      'ldpi',
-      'ldpi',
-      'mdpi',
-      'mdpi',
-      'hdpi',
-      'xhdpi',
-      'xxhdpi',
-      'xxxhdpi'
-    ];
-    
-    var androidScreenDensities = [
-      'land-hdpi',
-      'land-ldpi',
-      'land-mdpi',
-      'land-xhdpi',
-      'port-hdpi',
-      'port-ldpi',
-      'port-mdpi',
-      'port-xhdpi'
-    ];
-    
-    var platform = 'android';
-    var baseDir = 'defaultIcons';
-    
-    // get platform section and create it if it does not exist
-    var root = config.doc.find('platform[@name=\'' + platform + '\']');
-    if (!root) {
-        root = etree.SubElement(config.doc.getroot(), 'platform');
-        root.set('name', platform);
-    }
-    
-    var platformIcons = root.findall('icon');
-    var platformScreens = root.findall('splash');
-    
-    androidIconDensities.forEach(function (iconDensity) {
-        for (var icon, i = 0; i < platformIcons.length; i++) {
-            if (iconDensity === platformIcons[i].get('density')) {
-                icon = platformIcons[i];
-                break;
-            }
-        }
-               
-        if (!icon) {
-            var iconSrc = baseDir + '/' + platform + '/' + iconDensity + '.png';
-            var iconsPath = path.dirname(path.join(projectRoot, iconSrc));
-          
-            icon = etree.SubElement(root, 'icon');
-            icon.set('density', iconDensity);
-            icon.set('src', iconSrc); 
-        }
-    });
-    
-    androidScreenDensities.forEach(function (screenDensity) {
-        for (var screen, i = 0; i < platformScreens.length; i++) {
-            if (screenDensity === platformScreens[i].get('density')) {
-                screen = platformScreens[i];
-                break;
-            }
-        }
-        
-        if (!screen) {
-            var screenSrc = baseDir + '/' + platform + '/' + screenDensity + '.png';
-            var screensPath = path.dirname(path.join(projectRoot, screenSrc));
-          
-            screen = etree.SubElement(root, 'splash');
-            screen.set('density', screenDensity);
-            screen.set('src', screenSrc); 
-        }
-    });
-}
 
 module.exports = function (context) {
     logger.log('Updating Cordova configuration from W3C manifest...');
@@ -548,7 +623,6 @@ module.exports = function (context) {
         processAndroidIcons(manifestIcons);
         processWindowsIcons(manifestIcons);
         processWindowsPhoneIcons(manifestIcons);
-        processDefaultIcons();
 
         // save the updated configuration
         config.write();
