@@ -1,7 +1,6 @@
 ﻿#!/usr/bin/env node
 
-var defaultIconsBaseDir = 'defaultImages';
-var defaultIconsBaseUrl = 'https://raw.githubusercontent.com/manifoldjs/ManifoldJS/default-images/';
+var defaultIconsBaseDir = 'plugins/com.manifoldjs.hostedwebapp/assets/defaultImages';
 
 var fs = require('fs'),
     path = require('path'),
@@ -325,10 +324,6 @@ function processDefaultIconsByDensity(platform, screenDensities, iconDensities) 
                
         if (!icon) {
             var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconDensity + '.png';
-            var iconsPath = path.dirname(path.join(projectRoot, iconSrc));
-            var iconUrl = url.resolve(defaultIconsBaseUrl, iconSrc);
-            
-            downloadImage(iconUrl, iconsPath, iconSrc);
             
             icon = etree.SubElement(root, 'icon');
             icon.set('hap-default-image', 'yes');
@@ -347,10 +342,6 @@ function processDefaultIconsByDensity(platform, screenDensities, iconDensities) 
         
         if (!screen) {
             var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenDensity + '.png';
-            var screensPath = path.dirname(path.join(projectRoot, screenSrc));
-            var screenUrl = url.resolve(defaultIconsBaseUrl, screenSrc);
- 
-            downloadImage(screenUrl, screensPath, screenSrc);
           
             screen = etree.SubElement(root, 'splash');
             screen.set('hap-default-image', 'yes');
@@ -385,10 +376,6 @@ function processDefaultIconsBySize(platform, screenSizes, iconSizes) {
                
         if (!icon) {
             var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconSize + '.png';
-            var iconsPath = path.dirname(path.join(projectRoot, iconSrc));
-            var iconUrl = url.resolve(defaultIconsBaseUrl, iconSrc);
-            
-            downloadImage(iconUrl, iconsPath, iconSrc);
             
             icon = etree.SubElement(root, 'icon');
             icon.set('hap-default-image', 'yes');            
@@ -404,18 +391,14 @@ function processDefaultIconsBySize(platform, screenSizes, iconSizes) {
         var screenHeight = dimensions[1];
       
         for (var screen, i = 0; i < platformScreens.length; i++) {
-            if (screenWidth === platformIcons[i].get('width') && screenHeight === platformIcons[i].get('height')) {
-                screen = platformIcons[i];
+            if (screenWidth === platformScreens[i].get('width') && screenHeight === platformScreens[i].get('height')) {
+                screen = platformScreens[i];
                 break;
             }
         }
         
         if (!screen) {
             var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenSize + '.png';
-            var screensPath = path.dirname(path.join(projectRoot, screenSrc));
-            var screenUrl = url.resolve(defaultIconsBaseUrl, screenSrc);
- 
-            downloadImage(screenUrl, screensPath, screenSrc);
           
             screen = etree.SubElement(root, 'splash');
             screen.set('hap-default-image', 'yes');
@@ -502,7 +485,7 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
     var screenDensities = [];
     for (var size in screenSizeToDensityMap) {
         if (screenSizeToDensityMap.hasOwnProperty(size)) {
-          iconDensities.push(screenSizeToDensityMap[size]);
+          screenDensities.push(screenSizeToDensityMap[size]);
         }
     }
 
