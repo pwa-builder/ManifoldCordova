@@ -1,7 +1,5 @@
 ﻿#!/usr/bin/env node
 
-var defaultIconsBaseDir = 'plugins/com.manifoldjs.hostedwebapp/assets/defaultImages';
-
 var fs = require('fs'),
     path = require('path'),
     url = require('url'),
@@ -9,6 +7,7 @@ var fs = require('fs'),
     createConfigParser = require('./createConfigParser'),
     pendingTasks = [],
     Q,
+    defaultIconsBaseDir,
     projectRoot,
     config,
     etree;
@@ -551,6 +550,9 @@ module.exports = function (context) {
     logger.log('Updating Cordova configuration from W3C manifest...');
 
     Q = context.requireCordovaModule('q');
+
+    // Get base path for default icons
+    defaultIconsBaseDir = 'plugins/' + context.opts.plugin.id + '/assets/defaultImages';
 
     // create a parser for the Cordova configuration
     projectRoot = context.opts.projectRoot;
