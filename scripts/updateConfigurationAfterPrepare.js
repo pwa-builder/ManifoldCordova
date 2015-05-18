@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 var createConfigParser = require('./createConfigParser'),
-config,
-projectRoot,
-etree;
+	fs = require('fs'),
+	path = require('path'),
+	config,
+	windowsConfig,
+	projectRoot,
+	etree;
 
 var logger = {
   log: function () {
@@ -21,6 +24,12 @@ function configureParser(context) {
 
   var xml = cordova_util.projectConfig(projectRoot);
   config = createConfigParser(xml, etree, ConfigParser);
+  
+  var windowsDir = path.join(projectRoot, 'platforms', 'windows');
+  if (fs.existsSync(windowsDir)) {
+	  var windowsXml = cordova_util.projectConfig(windowsDir);
+	  windowsConfig = createConfigParser(windowsXml, etree, ConfigParser);
+  }
 }
 
 module.exports = function (context) {
@@ -36,4 +45,11 @@ module.exports = function (context) {
 
   // save the updated configuration
   config.write();
+  
+  if (windowsConfig) {
+	  // Patch for windows: restoring the start page to index.html
+	  logger.log('Applying windows fix...');
+	  windowsConfig.setAttribute('content', 'src', 'index.html');
+	  windowsConfig.write();
+  }
 }
