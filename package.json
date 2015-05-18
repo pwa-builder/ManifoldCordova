@@ -1,6 +1,6 @@
 {
   "name": "ManifoldCordova",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "This package is to be used as a workaround to be consumed fromt he ManifestJS tool. Its a Cordova plugin.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
