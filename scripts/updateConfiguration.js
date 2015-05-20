@@ -119,58 +119,38 @@ function configureParser(context) {
     config = createConfigParser(xml, etree, ConfigParser);
 }
 
-function processAccessRules(manifestRules, scope) {
-    // build the list of access rules
-    var externalRules = false;
-    var accessList = [];
-    if (manifestRules && manifestRules instanceof Array) {
-        manifestRules.forEach(function (rule) {
-            var element = { "url": rule.url, "external": rule.external === true ? true : false };
-            accessList.push(element);
-
-            if (rule.external) {
-              externalRules = true;
-            }
-        });
-    }
-
-    // add the scope rule to the access rules list (as an internal rule)
-    if (scope) {
-        var element = { "url": scope, "external": false };
-        accessList.push(element);
-    }
-
-    // If there is a scope rule or there are external rules, remove the wildcard ('*') access rules
-    if (scope || externalRules) {
-        config.removeElements('.//access[@origin=\'*\']');
-    }
+function processAccessRules(manifest) {
+    // Remove the wildcard ('*') access rules
+    config.removeElements('.//access[@origin=\'*\']');
 
     // Remove previous access rules
     config.removeElements('.//access[@hap-rule=\'yes\']');
 
-    // get the android platform section and create it if it does not exist
-    var androidRoot = config.doc.find('platform[@name=\'android\']');
-    if (!androidRoot) {
-        androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
-        androidRoot.set('name', 'android');
+    // Add base access rule based on the start_url and the scope
+    var baseUrlPattern = manifest.start_url;
+    if (manifest.scope && manifest.scope.length) {
+        baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
     }
+    
+    baseUrlPattern = url.resolve(baseUrlPattern, '*');
+    
+    var baseRule = new etree.SubElement(config.doc.getroot(), 'access');
+    baseRule.set('hap-rule','yes');
+    baseRule.set('origin', baseUrlPattern);
+    
+    var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
 
-    // add new access rules
-    accessList.forEach(function (item) {
-        if (item.external) {
-            // add external rule to the android platform section
-            var el = new etree.SubElement(androidRoot, 'access');
-            el.set('hap-rule','yes');
-            el.set('launch-external','yes');
-            el.set('origin', item.url);
-        }
-        else {
-            // add internal rule to the document's root level
-            var el = new etree.SubElement(config.doc.getroot(), 'access');
-            el.set('hap-rule','yes');
-            el.set('origin', item.url);
-        }
-    });
+    // add additional access rules
+    if (manifest.mjs_urlAccess && manifest.mjs_urlAccess instanceof Array) {
+        manifest.mjs_urlAccess.forEach(function (item) {
+            // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
+            if (item.url.indexOf(baseUrl) !== 0 ) {
+                var el = new etree.SubElement(config.doc.getroot(), 'access');
+                el.set('hap-rule','yes');
+                el.set('origin', item.url);
+            }
+        });
+    }
 }
 
 function getFormatFromIcon(icon) {
@@ -611,7 +591,7 @@ module.exports = function (context) {
         }
 
         // configure access rules
-        processAccessRules(manifest.mjs_urlAccess, manifest.scope);
+        processAccessRules(manifest);
 
         // Obtain and download the icons specified in the manidest
         var manifestIcons = getManifestIcons(manifest);
