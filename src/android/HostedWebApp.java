@@ -1,6 +1,9 @@
 package com.manifoldjs.hostedwebapp;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.content.res.AssetManager;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
@@ -176,6 +179,33 @@ public class HostedWebApp extends CordovaPlugin {
             }
         }
         return null;
+    }
+
+    @Override
+    public boolean onOverrideUrlLoading(String url) {
+        if (!this.webView.getWhitelist().isUrlWhiteListed(url)) {
+            try {
+                // If the URL is not whitelisted, open the URL in the external browser
+                // (code extracted from CordovaLib/src/CordovaUriHelper.java)
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(url));
+                intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                intent.setComponent(null);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
+                    intent.setSelector(null);
+                }
+
+                this.activity.startActivity(intent);
+                return true;
+            } catch (android.content.ActivityNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            return true;
+        } else {
+            return false;
+        }
     }
 
   public JSONObject getManifest() {
