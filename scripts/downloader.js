@@ -75,12 +75,12 @@ var downloadImage = function (inputUri, downloadDir, callback) {
     // Else save
     res.pipe(fs.createWriteStream(filePath))
        .on('close', function () {
-          var lastAccessed = lastModified = new Date();
+          var lastAccessed = new Date();
           var lastModified = res.headers['last-modified'] ? new Date(res.headers['last-modified']) : lastAccessed;
           
           // update the last modified time of the file to match the response header
           fs.utimes(filePath, lastAccessed, lastModified, function (err) {
-            return callback(err, { 'path': filePath, 'statusCode': res.statusCode, 'statusMessage': res.statusMessage })
+            return callback(err, { 'path': filePath, 'statusCode': res.statusCode, 'statusMessage': res.statusMessage });
           });
        });
   }).on('error', function(err) {
