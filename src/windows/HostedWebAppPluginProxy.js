@@ -6,7 +6,7 @@ var _zIndex = 10000;
 var _enableOfflineSupport = true;
 var _lastKnownLocation;
 var _lastKnownLocationFailed = false;
-var _externalWhiteList = [];
+var _whiteList = [];
 
 // creates a webview to host content
 function configureHost(url, zOrder, display) {
@@ -41,15 +41,24 @@ function configureHost(url, zOrder, display) {
 
 // handles webview's navigation starting event
 function navigationStartingEvent(evt) {
-    // if the url to navigate to matches any of the rules in the external whitelist, open it outside de app
-    _externalWhiteList.forEach(function (rule) {
-        if (rule.test(evt.uri)) {
+    if (evt.uri && evt.uri !== "") {
+        var isInWhitelist = false;
+        for (var i = 0; i < _whiteList.length; i++) {
+            var rule = _whiteList[i];
+            if (rule.test(evt.uri)) {
+                isInWhitelist = true;
+                break;
+            }
+        }
+
+        // if the url to navigate to does not match any of the rules in the whitelist, open it outside de app
+        if (!isInWhitelist) {
             evt.stopImmediatePropagation();
             evt.preventDefault();
             console.log("Popping out URL: " + evt.uri);
             Windows.System.Launcher.launchUriAsync(new Windows.Foundation.Uri(evt.uri));
         }
-    });
+    }
 }
 
 // handles webview's navigation completed event
@@ -135,14 +144,25 @@ function convertPatternToRegex(pattern, excludeLineStart, excludeLineEnd) {
     return new RegExp(regexBody);
 }
 
-// initializes an array of the external access rules defined in the manifest
-function configureExternalWhiteList(manifest) {
-    if (manifest && manifest.mjs_urlAccess && manifest.mjs_urlAccess.length) {
-        manifest.mjs_urlAccess.forEach(function (rule) {
-            if (rule.external) {
-                _externalWhiteList.push(convertPatternToRegex(rule.url));
-            }
-        });
+// initializes an array of the access rules defined in the manifest
+function configureWhiteList(manifest) {
+    if (manifest) {
+        // Add base access rule based on the start_url and the scope
+        var baseUrlPattern = new Windows.Foundation.Uri(manifest.start_url);
+        if (manifest.scope && manifest.scope.length) {
+            baseUrlPattern = baseUrlPattern.combineUri(manifest.scope);
+        }
+
+        baseUrlPattern = baseUrlPattern.combineUri('*');
+        _whiteList.push(convertPatternToRegex(baseUrlPattern.absoluteUri));
+
+
+        // add additional access rules
+        if (manifest.mjs_urlAccess && manifest.mjs_urlAccess instanceof Array) {
+            manifest.mjs_urlAccess.forEach(function (rule) {
+                _whiteList.push(convertPatternToRegex(rule.url));
+            });
+        }
     }
 }
 
@@ -209,7 +229,7 @@ cordova.commandProxy.add('HostedWebApp', module.exports);
 module.exports.loadManifest(
     function (manifest) {
         configureOfflineSupport('offline.html');
-        configureExternalWhiteList(manifest);
+        configureWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
         cordova.fireDocumentEvent("webviewCreated", { webView: _mainView });
     });
