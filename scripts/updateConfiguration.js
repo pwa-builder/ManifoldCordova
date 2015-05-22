@@ -126,6 +126,20 @@ function processAccessRules(manifest) {
     // Remove previous access rules
     config.removeElements('.//access[@hap-rule=\'yes\']');
 
+    // get the android platform section and create it if it does not exist
+    var androidRoot = config.doc.find('platform[@name=\'android\']');
+    if (!androidRoot) {
+        androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
+        androidRoot.set('name', 'android');
+    }
+
+    // get the ios platform section and create it if it does not exist
+    var iosRoot = config.doc.find('platform[@name=\'ios\']');
+    if (!iosRoot) {
+        iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
+        iosRoot.set('name', 'ios');
+    }
+
     // Add base access rule based on the start_url and the scope
     var baseUrlPattern = manifest.start_url;
     if (manifest.scope && manifest.scope.length) {
@@ -134,9 +148,13 @@ function processAccessRules(manifest) {
     
     baseUrlPattern = url.resolve(baseUrlPattern, '*');
     
-    var baseRule = new etree.SubElement(config.doc.getroot(), 'access');
-    baseRule.set('hap-rule','yes');
-    baseRule.set('origin', baseUrlPattern);
+    var androidbaseRule = new etree.SubElement(androidRoot, 'access');
+    androidbaseRule.set('hap-rule','yes');
+    androidbaseRule.set('origin', baseUrlPattern);
+    
+    var iosBaseRule = new etree.SubElement(iosRoot, 'access');
+    iosBaseRule.set('hap-rule','yes');
+    iosBaseRule.set('origin', baseUrlPattern);
     
     var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
 
@@ -145,9 +163,13 @@ function processAccessRules(manifest) {
         manifest.mjs_urlAccess.forEach(function (item) {
             // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
             if (item.url.indexOf(baseUrl) !== 0 ) {
-                var el = new etree.SubElement(config.doc.getroot(), 'access');
-                el.set('hap-rule','yes');
-                el.set('origin', item.url);
+                var androidAccessEl = new etree.SubElement(androidRoot, 'access');
+                androidAccessEl.set('hap-rule','yes');
+                androidAccessEl.set('origin', item.url);
+                
+                var iosAccessEl = new etree.SubElement(iosRoot, 'access');
+                iosAccessEl.set('hap-rule','yes');
+                iosAccessEl.set('origin', item.url);
             }
         });
     }
@@ -493,7 +515,6 @@ function processWindowsIcons(manifestIcons) {
         "106x106",
         "70x70",
         "170x170",
-        "57x57",
         "150x150",
         "360x360",
         "310x310",

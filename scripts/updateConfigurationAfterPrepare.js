@@ -47,8 +47,12 @@ module.exports = function (context) {
   config.write();
   
   if (windowsConfig) {
+    logger.log('Removing default images from windows configuration...');
+    windowsConfig.removeElements('.//icon[@hap-default-image=\'yes\']');
+    windowsConfig.removeElements('.//splash[@hap-default-image=\'yes\']');
+    
 	  // Patch for windows: restoring the start page to index.html
-	  logger.log('Applying windows fix...');
+	  logger.log('Restoring local start page in windows configuration...');
 	  windowsConfig.setAttribute('content', 'src', 'index.html');
 	  windowsConfig.write();
   }
