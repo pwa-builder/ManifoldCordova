@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     id="com.manifoldjs.hostedwebapp"
-    version="0.0.4">
+    version="0.0.5">
     <name>HostedWebApp</name>
     <description>Hosted Web App Plugin</description>
     <license>MIT License</license>
@@ -12,7 +12,8 @@
     <dependency id="org.apache.cordova.network-information" version=">=0.2.15" />
 
     <hook type="before_prepare" src="scripts/updateConfiguration.js" />
-
+    <hook type="after_prepare" src="scripts/updateConfigurationAfterPrepare.js" />
+	
     <js-module src="www/hostedWebApp.js" name="hostedwebapp">
         <clobbers target="hostedwebapp" />
     </js-module>
@@ -34,16 +35,10 @@
 
     <!-- windows -->
     <platform name="windows">
-
-
-      <hook type="after_prepare" src="scripts/windowsFix.js" />
       <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
         <merges target="" />
       </js-module>
-
-
     </platform>
-
 
     <!-- ios -->
     <platform name="ios">
