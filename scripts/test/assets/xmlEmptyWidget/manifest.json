@@ -3,9 +3,9 @@
     "name": "WAT Documentation",
 	"orientation": "landscape",
 	"display": "fullscreen",
-	"scope": "scope-rule",
+	"scope": "/scope-path/",
 	"mjs_access_whitelist": [
-		{ "url": "internal-rule" },
-		{ "url": "external-rule", "external": true }	
+		{ "url": "whitelist-rule-1" },
+		{ "url": "whitelist-rule-2" }
   ]
 }

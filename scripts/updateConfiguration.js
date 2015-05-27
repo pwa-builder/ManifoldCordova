@@ -7,6 +7,7 @@ var fs = require('fs'),
     createConfigParser = require('./createConfigParser'),
     pendingTasks = [],
     Q,
+    defaultIconsBaseDir,
     projectRoot,
     config,
     etree;
@@ -14,17 +15,17 @@ var fs = require('fs'),
 var logger = {
   log: function () {
     if (process.env.NODE_ENV !== 'test') {
-      console.log.apply(this, arguments);
+      console.log.apply(this, arguments)
     }
   },
   warn: function() {
     if (process.env.NODE_ENV !== 'test') {
-      console.warn.apply(this, arguments);
+      console.warn.apply(this, arguments)
     }
   },
   error: function() {
     if (process.env.NODE_ENV !== 'test') {
-      console.error.apply(this, arguments);
+      console.error.apply(this, arguments)
     }
   }
 };
@@ -52,6 +53,32 @@ function ensurePathExists(pathName, callback) {
   });
 };
 
+function downloadImage(imageUrl, imagesPath, imageSrc) {
+  var deferral = new Q.defer();
+  pendingTasks.push(deferral.promise);
+  
+  ensurePathExists(imagesPath, function(err) {
+    if (err && err.code !== 'EEXIST') {
+      return logger.error("ERROR: Failed to create directory at: " + imagesPath + ' - ' + err.message);
+    }
+
+    downloader.downloadImage(imageUrl, imagesPath, function (err, data) {
+        if (err) {
+            var localPath = path.join(imagesPath, path.basename(imageSrc));
+            if (!fs.existsSync(localPath)) {
+              logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
+            }
+        } else {
+          if (data && data.statusCode !== 304) {
+            logger.log('Downloaded icon file: ' + data.path);
+          }
+        }
+
+        deferral.resolve(data);
+    });
+  });          
+}
+
 // normalize icon list and download to res folder
 function getManifestIcons(manifest) {
     var iconList = [];
@@ -73,29 +100,9 @@ function getManifestIcons(manifest) {
                 iconList.push(element);
             });
 
-            var deferral = new Q.defer();
-            pendingTasks.push(deferral.promise);
             var iconsPath = path.dirname(path.join(projectRoot, icon.src));
-            ensurePathExists(iconsPath, function(err) {
-              if (err && err.code !== 'EEXIST') {
-                return logger.error("ERROR: Failed to create directory at: " + iconsPath + ' - ' + err.message);
-              }
-
-              downloader.downloadImage(imageUrl, iconsPath, function (err, data) {
-                  if (err) {
-                      var localPath = path.join(iconsPath, path.basename(icon.src));
-                      if (!fs.existsSync(localPath)) {
-                        logger.warn('WARNING: Failed to download icon file: ' + imageUrl + ' (' + err.message + ')');
-                      }
-                  } else {
-                    if (data && data.statusCode !== 304) {
-                      logger.log('Downloaded icon file: ' + data.path);
-                    }
-                  }
-
-                  deferral.resolve(data);
-              });
-            });
+            
+            downloadImage(imageUrl, iconsPath, icon.src);
         });
     }
 
@@ -113,99 +120,86 @@ function configureParser(context) {
 }
 
 function processAccessRules(manifest) {
-    // build the list of access rules
-    var accessList = [];
-    var manifestRules = manifest.mjs_access_whitelist;
-    var scope = manifest.scope;
-    var startUrl = manifest.start_url;
-    if (manifestRules && manifestRules instanceof Array) {
-        manifestRules.forEach(function (rule) {
-            var element = { "url": rule.url, "external": rule.external === true ? true : false };
-            accessList.push(element);
-        });
-    }
-
-    // add the scope rule to the access rules list (as an internal rule)
-    if (scope) {
-        var element = { "url": scope, "external": false };
-        accessList.push(element);
-    }
-
-    // Remove previous rules
-    config.removeElements('.//allow-intent[@hap-rule=\'yes\']');
-    config.removeElements('.//allow-navigation[@hap-rule=\'yes\']');
-    config.removeElements('.//access[@hap-rule=\'yes\']');
-
-    // Remove "full access"" rules
-    config.removeElements('.//allow-intent[@href=\'http://*/*\']');
-    config.removeElements('.//allow-intent[@href=\'https://*/*\']');
-    config.removeElements('.//allow-intent[@href=\'*\']');
-    config.removeElements('.//allow-navigation[@href=\'http://*/*\']');
-    config.removeElements('.//allow-navigation[@href=\'https://*/*\']');
-    config.removeElements('.//allow-navigation[@href=\'*\']');
-    config.removeElements('.//access[@origin=\'http://*/*\']');
-    config.removeElements('.//access[@origin=\'https://*/*\']');
-    config.removeElements('.//access[@origin=\'*\']');
-
-    // get the android platform section and create it if it does not exist
-    var androidRoot = config.doc.find('platform[@name=\'android\']');
-    if (!androidRoot) {
-        androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
-        androidRoot.set('name', 'android');
-    }
-
-    // get the ios platform section and create it if it does not exist
-    var iosRoot = config.doc.find('platform[@name=\'ios\']');
-    if (!iosRoot) {
-        iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
-        iosRoot.set('name', 'ios');
-    }
-
-    var el;
-
-    // Add "full access" network request whitelist rule for android
-    el = new etree.SubElement(androidRoot, 'access');
-    el.set('origin', '*');
-    el.set('hap-rule','yes');
-
-    // Add rules to allow access to all routes belonging to the domain of the target site
-    var hostUrl;
-    if (startUrl) {
-        var parsedStartUrl = url.parse(startUrl);
-        hostUrl = startUrl.replace(parsedStartUrl.path, '/');
-        var domainRule = hostUrl + '*';
-
-        el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
-        el.set('hap-rule','yes');
-        el.set('href', domainRule);
-
-        el = new etree.SubElement(iosRoot, 'access');
-        el.set('hap-rule','yes');
-        el.set('origin', domainRule);
-    }
-
-    // add new access rules
-    accessList.forEach(function (item) {
-        if (item.external) {
-            // add intent whitelist rule
-            var el = new etree.SubElement(config.doc.getroot(), 'allow-intent');
-            el.set('hap-rule','yes');
-            el.set('href', item.url);
+    if (manifest && manifest.start_url) {
+  
+        // Remove previous rules
+        config.removeElements('.//allow-intent[@hap-rule=\'yes\']');
+        config.removeElements('.//allow-navigation[@hap-rule=\'yes\']');
+        config.removeElements('.//access[@hap-rule=\'yes\']');
+    
+        // Remove "full access"" rules
+        config.removeElements('.//allow-intent[@href=\'http://*/*\']');
+        config.removeElements('.//allow-intent[@href=\'https://*/*\']');
+        config.removeElements('.//allow-intent[@href=\'*\']');
+        config.removeElements('.//allow-navigation[@href=\'http://*/*\']');
+        config.removeElements('.//allow-navigation[@href=\'https://*/*\']');
+        config.removeElements('.//allow-navigation[@href=\'*\']');
+        config.removeElements('.//access[@origin=\'http://*/*\']');
+        config.removeElements('.//access[@origin=\'https://*/*\']');
+        config.removeElements('.//access[@origin=\'*\']');
+    
+        // get the android platform section and create it if it does not exist
+        var androidRoot = config.doc.find('platform[@name=\'android\']');
+        if (!androidRoot) {
+            androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
+            androidRoot.set('name', 'android');
         }
-        else {
-            if (hostUrl && item.url.indexOf(hostUrl) !== 0) {
-                // add navigation whitelist rule
-                el = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
-                el.set('hap-rule','yes');
-                el.set('href', item.url);
-
-                // add access rule for ios
-                el = new etree.SubElement(iosRoot, 'access');
-                el.set('origin', item.url);
-                el.set('hap-rule','yes');
-            }
+    
+        // get the ios platform section and create it if it does not exist
+        var iosRoot = config.doc.find('platform[@name=\'ios\']');
+        if (!iosRoot) {
+            iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
+            iosRoot.set('name', 'ios');
         }
-    });
+    
+        // determine base rule based on the start_url and the scope
+        var baseUrlPattern = manifest.start_url;
+        if (manifest.scope && manifest.scope.length) {
+            baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
+        }
+        
+        baseUrlPattern = url.resolve(baseUrlPattern, '*');
+        
+        // add base rule as an access rule for Android
+        var androidAccessBaseRule = new etree.SubElement(androidRoot, 'access');
+        androidAccessBaseRule.set('hap-rule','yes');
+        androidAccessBaseRule.set('origin', baseUrlPattern);
+        
+        // add base rule as a navigation rule for Android
+        var androidNavigationBaseRule = new etree.SubElement(androidRoot, 'allow-navigation');
+        androidNavigationBaseRule.set('hap-rule','yes');
+        androidNavigationBaseRule.set('href', baseUrlPattern);
+        
+        // add base rule as an svvrdd rule for iOS
+        var iosBaseAccessRule = new etree.SubElement(iosRoot, 'access');
+        iosBaseAccessRule.set('hap-rule','yes');
+        iosBaseAccessRule.set('origin', baseUrlPattern);
+        
+        var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
+    
+        // add additional access rules
+        if (manifest.mjs_access_whitelist && manifest.mjs_access_whitelist instanceof Array) {
+            manifest.mjs_access_whitelist.forEach(function (item) {
+                // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
+                if (item.url.indexOf(baseUrl) !== 0 ) {
+                    // add as an access rule for Android
+                    var androidAccessEl = new etree.SubElement(androidRoot, 'access');
+                    androidAccessEl.set('hap-rule','yes');
+                    androidAccessEl.set('origin', item.url);
+    
+                    // add as a navigation rule for Android
+                    var androidNavigationEl = new etree.SubElement(androidRoot, 'allow-navigation');
+                    androidNavigationEl.set('hap-rule','yes');
+                    androidNavigationEl.set('href', item.url);  
+                    
+                    // add as an access rule for iOS
+                    var iosAccessEl = new etree.SubElement(iosRoot, 'access');
+                    iosAccessEl.set('hap-rule','yes');
+                    iosAccessEl.set('origin', item.url);
+                }
+            });
+        }
+    }
 }
 
 function getFormatFromIcon(icon) {
@@ -240,6 +234,11 @@ function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSize
     var platformScreens = root.findall('splash');
     manifestIcons.forEach(function (element) {
         if (!isValidFormat(element, validFormats)) {
+          return;
+        }
+        
+        // Don't process the icon if the icon file does not exist
+        if (!fs.existsSync(path.join(projectRoot, element.src))) {
           return;
         }
 
@@ -293,6 +292,11 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
         if (!isValidFormat(element, validFormats)) {
             return;
         }
+        
+        // Don't process the icon if the icon file does not exist
+        if (!fs.existsSync(path.join(projectRoot, element.src))) {
+            return;
+        }
 
         var size = element.width + "x" + element.height;
         var density = dppxToDensityMap[element.density];
@@ -337,6 +341,112 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
     });
 }
 
+function processDefaultIconsByDensity(platform, screenDensities, iconDensities) {   
+    // get platform section and create it if it does not exist
+    var root = config.doc.find('platform[@name=\'' + platform + '\']');
+    if (!root) {
+        root = etree.SubElement(config.doc.getroot(), 'platform');
+        root.set('name', platform);
+    }
+    
+    var platformIcons = root.findall('icon');
+    var platformScreens = root.findall('splash');
+    
+    iconDensities.forEach(function (iconDensity) {
+        for (var icon, i = 0; i < platformIcons.length; i++) {
+            if (iconDensity === platformIcons[i].get('density')) {
+                icon = platformIcons[i];
+                break;
+            }
+        }
+               
+        if (!icon) {
+            var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconDensity + '.png';
+            
+            icon = etree.SubElement(root, 'icon');
+            icon.set('hap-default-image', 'yes');
+            icon.set('density', iconDensity);
+            icon.set('src', iconSrc);
+        }
+    });
+    
+    screenDensities.forEach(function (screenDensity) {
+        for (var screen, i = 0; i < platformScreens.length; i++) {
+            if (screenDensity === platformScreens[i].get('density')) {
+                screen = platformScreens[i];
+                break;
+            }
+        }
+        
+        if (!screen) {
+            var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenDensity + '.png';
+          
+            screen = etree.SubElement(root, 'splash');
+            screen.set('hap-default-image', 'yes');
+            screen.set('density', screenDensity);
+            screen.set('src', screenSrc); 
+        }
+    });
+}
+
+function processDefaultIconsBySize(platform, screenSizes, iconSizes) {   
+    // get platform section and create it if it does not exist
+    var root = config.doc.find('platform[@name=\'' + platform + '\']');
+    if (!root) {
+        root = etree.SubElement(config.doc.getroot(), 'platform');
+        root.set('name', platform);
+    }
+    
+    var platformIcons = root.findall('icon');
+    var platformScreens = root.findall('splash');
+    
+    iconSizes.forEach(function (iconSize) {
+        var dimensions = iconSize.split('x');
+        var iconWidth = dimensions[0];
+        var iconHeight = dimensions[1];
+      
+        for (var icon, i = 0; i < platformIcons.length; i++) {
+            if (iconWidth === platformIcons[i].get('width') && iconHeight === platformIcons[i].get('height')) {
+                icon = platformIcons[i];
+                break;
+            }
+        }
+               
+        if (!icon) {
+            var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconSize + '.png';
+            
+            icon = etree.SubElement(root, 'icon');
+            icon.set('hap-default-image', 'yes');            
+            icon.set('width', iconWidth);
+            icon.set('height', iconHeight);
+            icon.set('src', iconSrc);
+        }
+    });
+    
+    screenSizes.forEach(function (screenSize) {
+        var dimensions = screenSize.split('x');
+        var screenWidth = dimensions[0];
+        var screenHeight = dimensions[1];
+      
+        for (var screen, i = 0; i < platformScreens.length; i++) {
+            if (screenWidth === platformScreens[i].get('width') && screenHeight === platformScreens[i].get('height')) {
+                screen = platformScreens[i];
+                break;
+            }
+        }
+        
+        if (!screen) {
+            var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenSize + '.png';
+          
+            screen = etree.SubElement(root, 'splash');
+            screen.set('hap-default-image', 'yes');
+            screen.set('width', screenWidth);
+            screen.set('height', screenHeight);
+            screen.set('src', screenSrc); 
+        }
+    });
+}
+
 function processiOSIcons(manifestIcons) {
     var iconSizes = [
         "40x40",
@@ -370,6 +480,7 @@ function processiOSIcons(manifestIcons) {
     ];
 
     processIconsBySize('ios', manifestIcons, splashScreenSizes, iconSizes);
+    processDefaultIconsBySize('ios', splashScreenSizes, iconSizes);
 }
 
 function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent) {
@@ -401,13 +512,28 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
         "320x480": "port-mdpi",
         "720x1280":"port-xhdpi"
     };
+    
+    var iconDensities = [];
+    for (var size in iconSizeToDensityMap) {
+        if (iconSizeToDensityMap.hasOwnProperty(size)) {
+          iconDensities.push(iconSizeToDensityMap[size]);
+        }
+    }
 
-var validFormats = [
-  'png',
-  'image/png'
-];
+    var screenDensities = [];
+    for (var size in screenSizeToDensityMap) {
+        if (screenSizeToDensityMap.hasOwnProperty(size)) {
+          screenDensities.push(screenSizeToDensityMap[size]);
+        }
+    }
 
-processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);
+    var validFormats = [
+      'png',
+      'image/png'
+    ];
+    
+    processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);   
+    processDefaultIconsByDensity('android', screenDensities, iconDensities);
 }
 
 function processWindowsIcons(manifestIcons) {
@@ -416,7 +542,6 @@ function processWindowsIcons(manifestIcons) {
         "106x106",
         "70x70",
         "170x170",
-        "57x57",
         "150x150",
         "360x360",
         "310x310",
@@ -432,6 +557,7 @@ function processWindowsIcons(manifestIcons) {
     ];
 
     processIconsBySize('windows', manifestIcons, splashScreenSizes, iconSizes);
+    processDefaultIconsBySize('windows', splashScreenSizes, iconSizes);
 };
 
 function processWindowsPhoneIcons(manifestIcons) {
@@ -445,6 +571,7 @@ function processWindowsPhoneIcons(manifestIcons) {
     ];
 
     processIconsBySize('wp8', manifestIcons, splashScreenSizes, iconSizes);
+    processDefaultIconsBySize('wp8', splashScreenSizes, iconSizes);
 };
 
 module.exports = function (context) {
@@ -452,13 +579,16 @@ module.exports = function (context) {
 
     Q = context.requireCordovaModule('q');
 
+    // Get base path for default icons
+    defaultIconsBaseDir = 'plugins/' + context.opts.plugin.id + '/assets/defaultImages';
+
     // create a parser for the Cordova configuration
     projectRoot = context.opts.projectRoot;
     configureParser(context);
 
     // read W3C manifest
     var task = Q.defer();
-
+    
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
@@ -511,17 +641,20 @@ module.exports = function (context) {
         // configure access rules
         processAccessRules(manifest);
 
-        // configure manifest icons
+        // Obtain and download the icons specified in the manidest
         var manifestIcons = getManifestIcons(manifest);
-        processiOSIcons(manifestIcons);
-        processAndroidIcons(manifestIcons);
-        processWindowsIcons(manifestIcons);
-        processWindowsPhoneIcons(manifestIcons);
-
-        // save the updated configuration
-        config.write();
 
         Q.allSettled(pendingTasks).then(function () {
+            
+          // Configure the icons once all icon files are downloaded
+          processiOSIcons(manifestIcons);
+          processAndroidIcons(manifestIcons);
+          processWindowsIcons(manifestIcons);
+          processWindowsPhoneIcons(manifestIcons);
+          
+          // save the updated configuration
+          config.write();
+          
           task.resolve();
         });
       });

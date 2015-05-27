@@ -9,7 +9,6 @@
 @property NSString *manifestError;
 @property BOOL enableOfflineSupport;
 @property NSURL *failedURL;
-@property CDVWhitelist *externalWhiteList;
 
 @end
 
@@ -23,7 +22,7 @@
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewShouldStartLoadWithRequest object:request]];
-    
+
     return [self.wrappedDelegate webView:webView shouldStartLoadWithRequest:request navigationType:navigationType];
 }
 
@@ -86,9 +85,6 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
     // load the W3C manifest
     manifest = [self loadManifestFile:nil];
-    
-    // initialize the external whitelist
-    self.externalWhiteList = [self configureExternalWhiteList:manifest];
 
     // set the webview delegate to notify navigation events
     notificationDelegate = [[CVDWebViewNotificationDelegate alloc] init];
@@ -286,34 +282,22 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     }
 }
 
--(CDVWhitelist*)configureExternalWhiteList:(NSDictionary*)theManifest
-{
-    NSArray* accessRules = [theManifest objectForKey:@"mjs_access_whitelist"];
-    NSMutableArray* externalAccessList = [[NSMutableArray alloc] initWithCapacity:0];
-    
-    if (accessRules != nil) {
-        for (NSDictionary *accessRule in accessRules) {
-            BOOL isExternal = [[accessRule objectForKey:@"external"] boolValue];
-            if (isExternal) {
-                NSString *url = [accessRule objectForKey:@"url"];
-                if (url != nil) {
-                    [externalAccessList addObject:url];
-                }
-            }
-        }
-    }
-    
-    return [[CDVWhitelist alloc] initWithArray:externalAccessList];
-}
-
 - (BOOL) shouldOverrideLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
 {
     NSURL* url = [request URL];
+    CDVViewController* cdvViewController = (CDVViewController*)self.viewController;
     
-    if ([self.externalWhiteList URLIsAllowed:url]) {
-        [[UIApplication sharedApplication] openURL:[request URL]]; // opens links in webview in Safari
-        
-        return YES;
+    if (cdvViewController != nil) {
+        if (cdvViewController.whitelist != nil) {
+            if ([cdvViewController.whitelist schemeIsAllowed:[url scheme]]) {
+                if (![cdvViewController.whitelist URLIsAllowed:url]) {
+                    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+                        [[UIApplication sharedApplication] openURL:url]; // opens the URL outside the webview
+                        return YES;
+                    }
+                }
+            }
+        }
     }
     
     return NO;

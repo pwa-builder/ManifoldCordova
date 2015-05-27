@@ -4,16 +4,17 @@
     version="0.1.0">
     <name>HostedWebApp</name>
     <description>Hosted Web App Plugin</description>
-    <license>Apache 2.0</license>
-    <keywords>cordova,manifest,hosted,web</keywords>
-    <repo></repo>
-    <issue></issue>
+    <license>MIT License</license>
+    <keywords>cordova,manifest,hosted,web,manifoldjs</keywords>
+    <repo>https://github.com/manifoldjs/ManifoldCordova.git</repo>
+    <issue>https://github.com/manifoldjs/ManifoldCordova/issues</issue>
 
     <dependency id="cordova-plugin-whitelist" version=">=1.0.1" />
     <dependency id="cordova-plugin-network-information" version=">=1.0.0" />
     
     <hook type="before_prepare" src="scripts/updateConfiguration.js" />
-
+    <hook type="after_prepare" src="scripts/updateConfigurationAfterPrepare.js" />
+	
     <js-module src="www/hostedWebApp.js" name="hostedwebapp">
         <clobbers target="hostedwebapp" />
     </js-module>
@@ -35,30 +36,24 @@
 
     <!-- windows -->
     <platform name="windows">
-
-
-      <hook type="after_prepare" src="scripts/windowsFix.js" />
       <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
         <merges target="" />
       </js-module>
-
-
     </platform>
 
+    <!-- ios -->
+    <platform name="ios">
+      <config-file target="config.xml" parent="/*">
+        <feature name="HostedWebApp">
+          <param name="ios-package" value="CDVHostedWebApp"/>
+          <param name="onload" value="true" />
+        </feature>
+      </config-file>
+      <config-file target="config.xml" parent="/*/feature[@name='NetworkStatus']">
+          <param name="onload" value="true" />
+      </config-file>
 
-  <!-- ios -->
-  <platform name="ios">
-    <config-file target="config.xml" parent="/*">
-      <feature name="HostedWebApp">
-        <param name="ios-package" value="CDVHostedWebApp"/>
-        <param name="onload" value="true" />
-      </feature>
-    </config-file>
-    <config-file target="config.xml" parent="/*/feature[@name='NetworkStatus']">
-        <param name="onload" value="true" />
-    </config-file>
-
-    <header-file src="src/ios/CDVHostedWebApp.h" />
-    <source-file src="src/ios/CDVHostedWebApp.m" />
-  </platform>
+      <header-file src="src/ios/CDVHostedWebApp.h" />
+      <source-file src="src/ios/CDVHostedWebApp.m" />
+    </platform>
 </plugin>

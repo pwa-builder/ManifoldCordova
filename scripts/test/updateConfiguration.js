@@ -12,11 +12,17 @@ var fs = require('fs');
 var assetsDirectory = path.join(__dirname, 'assets');
 var workingDirectory = path.join(__dirname, 'tmp');
 
-function initializeContext(ctx) {
-  if (!ctx) {
-    ctx = {};
-  }
-
+function initializeContext(testDir) {
+  
+  var ctx = {
+    opts : {
+      plugin: {
+        id: 'com-manifoldjs-hostedwebapp'
+      },
+      projectRoot : testDir
+    }
+  };
+            
   var requireCordovaModule = ctx.requireCordovaModule;
 
   ctx.requireCordovaModule = function(moduleName) {
@@ -61,12 +67,7 @@ describe('updateConfiguration.js', function (){
   it('Should update name with short_name value (without spaces) from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function() {
       var content = fs.readFileSync(configXML).toString();
@@ -79,12 +80,7 @@ describe('updateConfiguration.js', function (){
   it('Should update name with name value (without spaces) from manifest.json if short_name is missing', function (done){
     var testDir = path.join(workingDirectory, 'shortNameMissing');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function() {
       var content = fs.readFileSync(configXML).toString();
@@ -97,12 +93,7 @@ describe('updateConfiguration.js', function (){
   it('Should ignore slashes when updating name from manifest.json', function (done) {
     var testDir = path.join(workingDirectory, 'shortNameWithSlashes');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -115,12 +106,7 @@ describe('updateConfiguration.js', function (){
   it('Should not update name if it is missing in manifest.json', function (done) {
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -133,12 +119,7 @@ describe('updateConfiguration.js', function (){
   it('Should add name if XML element is missing', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -152,12 +133,7 @@ describe('updateConfiguration.js', function (){
   it('Should update orientation with value from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -172,12 +148,7 @@ describe('updateConfiguration.js', function (){
   it('Should not update orientation if it is missing in manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -191,12 +162,7 @@ describe('updateConfiguration.js', function (){
   it('Should add orientation if XML element element is missing', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -210,12 +176,7 @@ describe('updateConfiguration.js', function (){
   it('Should update fullscreen with value from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -228,12 +189,7 @@ describe('updateConfiguration.js', function (){
   it('Should not update fullscreen if it is missing in manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -246,12 +202,7 @@ describe('updateConfiguration.js', function (){
   it('Should add fullscreen if XML element is missing', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -265,12 +216,7 @@ describe('updateConfiguration.js', function (){
   it('Should keep existing access rules unchanged in config.xml', function (done){
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -285,12 +231,7 @@ describe('updateConfiguration.js', function (){
   it('Should remove "root" full access rules from config.xml', function (done){
     var testDir = path.join(workingDirectory, 'fullAccessRules');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
@@ -307,93 +248,61 @@ describe('updateConfiguration.js', function (){
     });
   });
 
-  it('Should add full access network request whitelist rule for android in config.xml', function (done){
+  it('Should add access rules for web site domain in config.xml if scope is missing', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.replace(/[\t\r\n\s]/g, '').indexOf('<platformname="android"><accesshap-rule="yes"origin="*"/></platform>') > -1);
+
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
+
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
       
       done();
     });
   });
 
-  it('Should add access rules for web site domain in config.xml', function (done){
-    var testDir = path.join(workingDirectory, 'normalFlow');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx).then(function () {
-      var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<allow-navigation hap-rule="yes" href="http://wat-docs.azurewebsites.net/*" />') > -1);
-      assert(content.replace(/[\t\r\n\s]/g, '').indexOf('<platformname="ios"><accesshap-rule="yes"origin="http://wat-docs.azurewebsites.net/*"/></platform>') > -1);
-      
-      done();
-    });
-  });
-
-  it('Should add navigation whitelist rules from mjs_access_whitelist list and scope', function (done){
+  it('Should add access rules for scope in config.xml', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<allow-navigation hap-rule="yes" href="scope-rule" />') > -1);   
-      assert(content.indexOf('<allow-navigation hap-rule="yes" href="internal-rule" />') > -1);   
+
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      
+      done();
+    });
+  });
+
+  it('Should add access rules from mjs_access_whitelist list', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
+      
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
     
-      done();
-    });
-  });
-
-  it('Should add intent whitelist rules from mjs_access_whitelist list', function (done){
-    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx).then(function () {
-      var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<allow-intent hap-rule="yes" href="external-rule" />') > -1);   
-  
-      done();
-    });
-  });
-
-  it('Should add access rules for ios from mjs_access_whitelist list and scope', function (done){
-    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx).then(function () {
-      var content = fs.readFileSync(configXML).toString();
-      assert(content.replace(/[\t\r\n\s]/g, '').indexOf('<platformname="ios"><accesshap-rule="yes"origin="http://wat-docs.azurewebsites.net/*"/><accesshap-rule="yes"origin="internal-rule"/><accesshap-rule="yes"origin="scope-rule"/></platform>') > -1);    
       done();
     });
   });

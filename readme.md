@@ -1,7 +1,5 @@
-﻿PRELIMINARY DOCUMENTATION
-
-<!---
- license: TBD
+﻿<!---
+ license: MIT License
 -->
 
 # Hosted Web Application
@@ -25,8 +23,8 @@ This plugin enables the creation of a hosted web application from a [W3C manifes
         "sizes": "128x128",
         "density": 2
       }],
-  "scope": "/",
-  "start_url": "http://www.racer2k.net/start.html",
+  "scope": "/racer/",
+  "start_url": "http://www.racer2k.net/racer/start.html",
   "display": "fullscreen",
   "orientation": "landscape",
   "theme_color": "aliceblue"
@@ -37,12 +35,12 @@ The W3C manifest enables the configuration of the application’s name, its star
 
 When the application is launched, the plugin automatically handles navigation to the site’s starting URL.
 
+> **Note:** Although the W3C specs for the Web App manifest consider absolute and relative URLs valid for the _start_url_ value (e.g. _http://www.racer2k.net/racer/start.html_ and _/start.html_ are both valid), the plugin requires this URL **to be an absolute URL**. Otherwise, the installed applications won't be able to navigate to the web site.
+
 Lastly, since network connectivity is essential to the operation of a hosted web application, the plugin implements a basic offline feature that will show an offline page whenever connectivity is lost and will prevent users from interacting with the application until the connection is restored.
 
 ## Installation
-> **Note:** These are temporary installation steps until the plugin is published to the Cordova registry.
-
-`cordova plugin add https://github.com/manifoldjs/ManifoldCordova.git`
+`cordova plugin add com.manifoldjs.hostedwebapp`
 
 > **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **root** folder of the Cordova application, alongside **config.xml**, and name it **manifest.json**.
 
@@ -70,9 +68,7 @@ The plugin enables using content hosted in a web site inside a Cordova applicati
 	> **Note:** You can find a sample manifest file at the start of this document. 
  
 1. Add the **Hosted Web Application** plugin to the project.  
-	`cordova plugin add https://github.com/manifoldjs/ManifoldCordova.git`
-
-	> **Note:** These are temporary installation steps until the plugin is published to the Cordova registry.
+	`cordova plugin add com.manifoldjs.hostedwebapp`
 
 1. Add one or more platforms, for example, to support Android.  
 	`cordova platform add android`
@@ -127,27 +123,28 @@ For example, the following manifest references icons from the _/resources_ path 
         },
         ...
     ],
-    "scope": "*",
-    "start_url": "http://wat-docs.azurewebsites.net/",
+    "scope": "/racer/",
+    "start_url": "http://www.racer2k.net/racer/start.html",
     "display": "fullscreen",
     "orientation": "portrait"
 }
 </pre>
 
 ### URL Access Rules
-For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **mjs_access_whitelist** that defines an array of access rules, each one consisting of a _url_ attribute that identifies the target of the rule and a boolean attribute named _external_ that indicates whether URLs matching the rule should be navigated to by the application or launched in an external browser.
+For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **mjs_access_whitelist** that defines an array of access rules each one consisting of a _url_ attribute that identifies the target of the rule and indicates whether URLs matching the rule should be navigated to by the application. Non-matching URLs will be launched externally.
 
-Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to external content used within the site, for example, to reference script files hosted by a  CDN origin. It must also handle any URLs that should be launched externally. 
+Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to external content used within the site, for example, to reference script files hosted by a CDN origin. 
 
 To configure the security policy, the plugin hook maps the scope and URL access rules in the W3C manifest (**manifest.json**) to suitable access elements in the Cordova configuration file (**config.xml**). For example:
 
 **Manifest.json**
 <pre>
 ...
-   "scope":  "http://www.xyz.com/", 
-   "mjs_access_whitelist":  [ 
+   "start_url": "http://www.xyz.com/",
+   "scope":  "/", 
+   "mjs_access_whitelist": [
      { "url": "http//googleapis.com/*" },
-     { "url": "http//wat.codeplex.com/", "external": true }
+     { "url": "http//login.anotherdomain.com/" }
    ]
 ...
 </pre>
@@ -157,45 +154,54 @@ To configure the security policy, the plugin hook maps the scope and URL access 
 ...
 &lt;access origin="http://www.xyz.com/*" /&gt;
 &lt;access origin="http://googleapis.com/*" /&gt; 
-&lt;access origin="http://wat.codeplex.com/" launch-external="yes" /&gt;
+&lt;access origin="http://login.anotherdomain.com/" /&gt;
 ...
 </pre>
-
-## Preferences
-[TBD]
 
 ## Methods
 Even though the following methods are available, it should be pointed out that calling them is not required as the plugin will provide most of its functionality by simply embedding a W3C manifest in the application package.
 
-- **loadManifest**:	Loads the specified W3C manifest.  
+### loadManifest
+Loads the specified W3C manifest.
+ 
+`hostedwebapp.loadManifest(successCallback, errorCallback, manifestFileName)`
+  
+|**Parameter**     |**Description**                                                            |
+|:-----------------|:--------------------------------------------------------------------------|
+|_successCallback_ |A callback that is passed a manifest object.                               |
+|_errorCallback_   |A callback that executes if an error occurs when loading the manifest file.|
+|_manifestFileName_|The name of the manifest file to load.                                     |
 
-	`hostedwebapp.loadManifest(successCallback, errorCallback, manifestFileName)`
+### getManifest
+Returns the currently loaded manifest.
 
-	|**Parameter**     |**Description**                                                            |
-	|------------------|---------------------------------------------------------------------------|
-	|_successCallback_ |A callback that is passed a manifest object.                               |
-	|_errorCallback_   |A callback that executes if an error occurs when loading the manifest file.|
-	|_manifestFileName_|The name of the manifest file to load.                                     |
+`hostedwebapp.getManifest(successCallback, errorCallback)`
 
-- **getManifest**: Returns the currently loaded manifest.
+|**Parameter**     |**Description**                                                            |
+|:-----------------|:--------------------------------------------------------------------------|
+|_successCallback_ |A callback that is passed a manifest object.                               |
+|_errorCallback_   |A callback that executes if a manifest is not currently available.         |
 
-	`hostedwebapp.getManifest(successCallback, errorCallback)`
+### enableOfflinePage
+Enables offline page support.
 
-	|**Parameter**     |**Description**                                                            |
-	|------------------|---------------------------------------------------------------------------|
-	|_successCallback_ |A callback that is passed a manifest object.                               |
-	|_errorCallback_   |A callback that executes if a manifest is not currently available.         |
+`hostedwebapp.enableOfflinePage()`
 
-- **enableOfflinePage**: Enables offline page support.
+### disableOfflinePage
+Disables offline page support.
 
-	`hostedwebapp.enableOfflinePage()`
-
-- **disableOfflinePage**: Disables offline page support.
-
-	`hostedwebapp.disableOfflinePage()`
+`hostedwebapp.disableOfflinePage()`
 
 ## Supported Platforms
 Windows 8.1  
 Windows Phone 8.1  
 iOS  
-Android  
+Android
+
+### Windows 8.1 and Windows Phone 8.1 Quirks
+
+Cordova for Android and iOS platforms provide a security policy to control which network requests triggered by the page (css, js, images, XHRs, etc.) are allowed to be made; this means that they will be blocked if they are outside the scope and do not match any of the access rules defined in the manifest.
+
+The Windows and Windows Phone platforms do not provide control for these kind of requests, and they will be allowed.
+
+
