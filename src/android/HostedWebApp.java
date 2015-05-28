@@ -183,21 +183,23 @@ public class HostedWebApp extends CordovaPlugin {
 
     @Override
     public boolean onOverrideUrlLoading(String url) {
-        if (!this.webView.getWhitelist().isUrlWhiteListed(url)) {
+        CordovaPlugin whiteListPlugin = this.webView.getPluginManager().getPlugin("Whitelist");
+
+        if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowNavigation(url)) {
+            // If the URL is not in the list URLs to allow navigation, open the URL in the external browser
+            // (code extracted from CordovaLib/src/org/apache/cordova/CordovaWebViewImpl.java)
             try {
-                // If the URL is not whitelisted, open the URL in the external browser
-                // (code extracted from CordovaLib/src/CordovaUriHelper.java)
-
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse(url));
                 intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                intent.setComponent(null);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
-                    intent.setSelector(null);
+                Uri uri = Uri.parse(url);
+                // Omitting the MIME type for file: URLs causes "No Activity found to handle Intent".
+                // Adding the MIME type to http: URLs causes them to not be handled by the downloader.
+                if ("file".equals(uri.getScheme())) {
+                    intent.setDataAndType(uri, this.webView.getResourceApi().getMimeType(uri));
+                } else {
+                    intent.setData(uri);
                 }
-
-                this.activity.startActivity(intent);
-                return true;
+                cordova.getActivity().startActivity(intent);
             } catch (android.content.ActivityNotFoundException e) {
                 e.printStackTrace();
             }
@@ -208,9 +210,9 @@ public class HostedWebApp extends CordovaPlugin {
         }
     }
 
-  public JSONObject getManifest() {
-    return this.manifestObject;
-  }
+    public JSONObject getManifest() {
+        return this.manifestObject;
+    }
 
     private boolean assetExists(String asset) {
         final AssetManager assetManager = this.activity.getResources().getAssets();
@@ -250,12 +252,19 @@ public class HostedWebApp extends CordovaPlugin {
     }
 
     private void handleNetworkConnectionChange(String info) {
+        final HostedWebApp me = HostedWebApp.this;
         if (info.equals("none")) {
             this.showOfflineOverlay();
         } else {
             if (this.isConnectionError) {
-                String currentUrl = this.webView.getUrl();
-                this.webView.loadUrlIntoView(currentUrl, false);
+
+                this.activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String currentUrl = me.webView.getUrl();
+                        me.webView.loadUrlIntoView(currentUrl, false);
+                    }
+                });
             } else {
                 this.hideOfflineOverlay();
             }
