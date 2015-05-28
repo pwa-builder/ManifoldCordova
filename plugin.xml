@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     id="com.manifoldjs.hostedwebapp"
-    version="0.0.5">
+    version="0.0.6">
     <name>HostedWebApp</name>
     <description>Hosted Web App Plugin</description>
     <license>MIT License</license>
@@ -13,7 +13,8 @@
 
     <hook type="before_prepare" src="scripts/updateConfiguration.js" />
     <hook type="after_prepare" src="scripts/updateConfigurationAfterPrepare.js" />
-	
+    <hook type="after_build" src="scripts/updateConfigurationAfterBuild.js" />
+  
     <js-module src="www/hostedWebApp.js" name="hostedwebapp">
         <clobbers target="hostedwebapp" />
     </js-module>
