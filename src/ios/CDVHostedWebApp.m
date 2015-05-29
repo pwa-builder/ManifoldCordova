@@ -216,13 +216,13 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 // network connectivity is lost. It restores the original view once the network is up again.
 - (void)updateConnectivityStatus:(NSNotification*)notification
 {
-    CDVReachability* reachability = [notification object];
-
     if ([[notification name] isEqualToString:kReachabilityChangedNotification]) {
-        NSLog (@"Received a network connectivity change notification. The device is currently %@.", reachability.connectionRequired ? @"offline" : @"online");
-        if (self.enableOfflineSupport) {
-            if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
-                if (reachability.connectionRequired) {
+        CDVReachability* reachability = [notification object];
+        if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
+            BOOL isOffline = (reachability.currentReachabilityStatus == NotReachable);
+            NSLog (@"Received a network connectivity change notification. The device is currently %@.", isOffline ? @"offLine" : @"online");
+            if (self.enableOfflineSupport) {
+                if (isOffline) {
                     [self.offlineView setHidden:NO];
                 }
                 else {
