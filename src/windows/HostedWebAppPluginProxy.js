@@ -161,6 +161,12 @@ function configureWhiteList(manifest) {
     }
 }
 
+// hides the extended splash screen
+function hideExtendedSplashScreen(e) {
+    var extendedSplashScreen = document.getElementById("extendedSplashScreen");
+    extendedSplashScreen.style.display = "none";
+}
+
 module.exports = {
     // loads the W3C manifest file and parses it
     loadManifest: function (successCallback, errorCallback, args) {
@@ -226,5 +232,7 @@ module.exports.loadManifest(
         configureOfflineSupport('offline.html');
         configureWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
+        _mainView.addEventListener("MSWebViewDOMContentLoaded", hideExtendedSplashScreen, false);
+
         cordova.fireDocumentEvent("webviewCreated", { webView: _mainView });
     });
