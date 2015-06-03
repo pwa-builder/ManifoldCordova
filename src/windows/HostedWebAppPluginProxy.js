@@ -158,8 +158,8 @@ function configureWhiteList(manifest) {
 
 
         // add additional access rules
-        if (manifest.mjs_urlAccess && manifest.mjs_urlAccess instanceof Array) {
-            manifest.mjs_urlAccess.forEach(function (rule) {
+        if (manifest.mjs_access_whitelist && manifest.mjs_access_whitelist instanceof Array) {
+            manifest.mjs_access_whitelist.forEach(function (rule) {
                 _whiteList.push(convertPatternToRegex(rule.url));
             });
         }

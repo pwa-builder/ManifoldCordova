@@ -12,11 +12,17 @@ var fs = require('fs');
 var assetsDirectory = path.join(__dirname, 'assets');
 var workingDirectory = path.join(__dirname, 'tmp');
 
-function initializeContext(ctx) {
-  if (!ctx) {
-    ctx = {};
-  }
-
+function initializeContext(testDir) {
+  
+  var ctx = {
+    opts : {
+      plugin: {
+        id: 'com-manifoldjs-hostedwebapp'
+      },
+      projectRoot : testDir
+    }
+  };
+            
   var requireCordovaModule = ctx.requireCordovaModule;
 
   ctx.requireCordovaModule = function(moduleName) {
@@ -58,286 +64,249 @@ describe('updateConfiguration.js', function (){
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
 
-  it('Should update name with value from manifest.json', function (){
+  it('Should update name with short_name value (without spaces) from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<name>WAT Documentation</name>') > -1);
+    updateConfiguration(ctx).then(function() {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>WATDocs</name>') > -1);
+      
+      done();
+    });
   });
 
-  it('Should not update name if it is missing in manifest.json', function (){
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
+  it('Should update name with name value (without spaces) from manifest.json if short_name is missing', function (done){
+    var testDir = path.join(workingDirectory, 'shortNameMissing');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<name>HelloWorld</name>') > -1);
-  });
-
-  it('Should add name if XML element is missing', function (){
-    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<name>WAT Documentation</name>') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<name>WAT Documentation</name>') < content.indexOf('</widget>'));
-  });
-
-  it('Should update orientation with value from manifest.json', function (){
-    var testDir = path.join(workingDirectory, 'normalFlow');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<preference name="Orientation" value="landscape" />') > -1);
-  });
-
-  it('Should not update orientation if it is missing in manifest.json', function (){
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<preference name="Orientation" value="default" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<preference name="Orientation" value="default" />') < content.indexOf('</widget>'));
-  });
-
-  it('Should add orientation if XML element element is missing', function (){
-    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<preference name="Orientation" value="landscape" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<preference name="Orientation" value="landscape" />') < content.indexOf('</widget>'));
-  });
-
-  it('Should update fullscreen with value from manifest.json', function (){
-    var testDir = path.join(workingDirectory, 'normalFlow');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
-  });
-
-  it('Should not update fullscreen if it is missing in manifest.json', function (){
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
-  });
-
-  it('Should add fullscreen if XML element is missing', function (){
-    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<preference name="Fullscreen" value="true" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
-    assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
-  });
-
-  it('Should remove wildcard access rule from config.xml', function (){
-    var testDir = path.join(workingDirectory, 'normalFlow');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="*" />') == -1);
-  });
-
-  it('Should keep wildcard access rule if scope and external rules not present', function (){
-    var testDir = path.join(workingDirectory, 'noExternalRulesNorScope');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
-
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="*" />') > -1);
-  });
-
-  it('Should add launch-external attribute to existing access rule', function (){
-    var testDir = path.join(workingDirectory, 'updateAccessRules');
-    var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-      opts : {
-        projectRoot : testDir
-      }
-    };
-    initializeContext(ctx);
-    
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') > -1);
-    assert(content.indexOf('<access hap-rule="yes" origin="http://wat.codeplex.com" />') == -1);
+    updateConfiguration(ctx).then(function() {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>WATDocumentation</name>') > -1);
+      
+      done();
+    });
   });
   
-  it('Should remove launch-external attribute from existing access rule', function (){
-    var testDir = path.join(workingDirectory, 'updateAccessRules');
+  it('Should ignore slashes when updating name from manifest.json', function (done) {
+    var testDir = path.join(workingDirectory, 'shortNameWithSlashes');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-      opts : {
-        projectRoot : testDir
-      }
-    };
-    initializeContext(ctx);
-    
-    updateConfiguration(ctx);
+    var ctx = initializeContext(testDir);
 
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access hap-rule="yes" origin="http://ajax.googleapis.com/*" />') > -1);
-    assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://ajax.googleapis.com/*" />') == -1);
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>WATDocs</name>') > -1);
+      
+      done();
+    });
   });
 
-  it('Should keep existing access rule unchanged in config.xml', function (){
+  it('Should not update name if it is missing in manifest.json', function (done) {
     var testDir = path.join(workingDirectory, 'jsonEmpty');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access origin="http://com.example.hello/home" />') > -1);
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>HelloWorld</name>') > -1);
+      
+      done();
+    });
   });
 
-  it('Should add internal access rule from hap_access list', function (){
+  it('Should add name if XML element is missing', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access hap-rule="yes" origin="http://ajax.googleapis.com/*" />') > -1);  
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<name>WATDocumentation</name>') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+      assert(content.indexOf('<name>WATDocumentation</name>') < content.indexOf('</widget>'));
+      done();
+    });
   });
 
-  it('Should add internal access rule from scope property', function (){
+ 
+  it('Should update orientation with value from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
-    updateConfiguration(ctx);
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<preference name="Orientation" value="landscape" />') > -1);
+      
+      done();
+    });
 
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access hap-rule="yes" origin="http://wat-docs.azurewebsites.net/*" />') > -1);
+
   });
 
-  it('Should add external access rule to android section', function (){
+  it('Should not update orientation if it is missing in manifest.json', function (done){
+    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<preference name="Orientation" value="default" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+      assert(content.indexOf('<preference name="Orientation" value="default" />') < content.indexOf('</widget>'));
+      
+      done();
+    });
+  });
+
+  it('Should add orientation if XML element element is missing', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<preference name="Orientation" value="landscape" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+      assert(content.indexOf('<preference name="Orientation" value="landscape" />') < content.indexOf('</widget>'));
+      
+      done();
+    });
+  });
+
+  it('Should update fullscreen with value from manifest.json', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
-    var ctx = {
-                opts : {
-                  projectRoot : testDir
-                }
-              };
-    initializeContext(ctx);
+    var ctx = initializeContext(testDir);
 
-    updateConfiguration(ctx);
-
-    var content = fs.readFileSync(configXML).toString();
-    assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') > -1);
-    assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') > content.indexOf('<platform name="android">'));
-    assert(content.indexOf('<access hap-rule="yes" launch-external="yes" origin="http://wat.codeplex.com" />') < content.indexOf('</platform>'));
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);    
+    
+      done();
+    });
   });
-  
+
+  it('Should not update fullscreen if it is missing in manifest.json', function (done){
+    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<preference name="Fullscreen" value="true" />') > -1);
+    
+      done();
+    });
+  });
+
+  it('Should add fullscreen if XML element is missing', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<preference name="Fullscreen" value="true" />') > content.indexOf('<widget id="com.example.hello" version="0.0.1">'));
+      assert(content.indexOf('<preference name="Fullscreen" value="true" />') < content.indexOf('</widget>'));
+    
+      done();
+    });
+  });
+
+  it('Should keep existing access rules unchanged in config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<allow-navigation href="general-navigation-rule" />') > -1);        
+      assert(content.indexOf('<allow-intent href="general-intent-rule" />') > -1); 
+      assert(content.indexOf('<access origin="ios-access-rule" />') > -1); 
+               
+      done();
+    });
+  });
+
+  it('Should remove "root" full access rules from config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'fullAccessRules');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<allow-navigation href="http://*/*\" />') === -1);
+      assert(content.indexOf('<allow-navigation href="https://*/*\" />') === -1);
+      assert(content.indexOf('<allow-navigation href="*" />') === -1);
+      assert(content.indexOf('<allow-intent href="https://*/*\" />') === -1);
+      assert(content.indexOf('<allow-intent href="http://*/*\" />') === -1);
+      assert(content.indexOf('<allow-intent href="*" />') === -1);
+      assert(content.indexOf('<access origin="https://*/*\" />') === -1);
+      assert(content.indexOf('<access origin="http://*/*\" />') === -1);
+      
+      done();
+    });
+  });
+
+  it('Should add access rules for web site domain in config.xml if scope is missing', function (done){
+    var testDir = path.join(workingDirectory, 'normalFlow');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
+
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
+      
+      done();
+    });
+  });
+
+  it('Should add access rules for scope in config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      
+      done();
+    });
+  });
+
+  it('Should add access rules from mjs_access_whitelist list', function (done){
+    var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
+      
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
+    
+      done();
+    });
+  });
+
   afterEach(function () {
     tu.deleteRecursiveSync(workingDirectory);
   });

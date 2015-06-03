@@ -120,58 +120,85 @@ function configureParser(context) {
 }
 
 function processAccessRules(manifest) {
-    // Remove the wildcard ('*') access rules
-    config.removeElements('.//access[@origin=\'*\']');
-
-    // Remove previous access rules
-    config.removeElements('.//access[@hap-rule=\'yes\']');
-
-    // get the android platform section and create it if it does not exist
-    var androidRoot = config.doc.find('platform[@name=\'android\']');
-    if (!androidRoot) {
-        androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
-        androidRoot.set('name', 'android');
-    }
-
-    // get the ios platform section and create it if it does not exist
-    var iosRoot = config.doc.find('platform[@name=\'ios\']');
-    if (!iosRoot) {
-        iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
-        iosRoot.set('name', 'ios');
-    }
-
-    // Add base access rule based on the start_url and the scope
-    var baseUrlPattern = manifest.start_url;
-    if (manifest.scope && manifest.scope.length) {
-        baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
-    }
+    if (manifest && manifest.start_url) {
+  
+        // Remove previous rules
+        config.removeElements('.//allow-intent[@hap-rule=\'yes\']');
+        config.removeElements('.//allow-navigation[@hap-rule=\'yes\']');
+        config.removeElements('.//access[@hap-rule=\'yes\']');
     
-    baseUrlPattern = url.resolve(baseUrlPattern, '*');
+        // Remove "full access"" rules
+        config.removeElements('.//allow-intent[@href=\'http://*/*\']');
+        config.removeElements('.//allow-intent[@href=\'https://*/*\']');
+        config.removeElements('.//allow-intent[@href=\'*\']');
+        config.removeElements('.//allow-navigation[@href=\'http://*/*\']');
+        config.removeElements('.//allow-navigation[@href=\'https://*/*\']');
+        config.removeElements('.//allow-navigation[@href=\'*\']');
+        config.removeElements('.//access[@origin=\'http://*/*\']');
+        config.removeElements('.//access[@origin=\'https://*/*\']');
+        config.removeElements('.//access[@origin=\'*\']');
     
-    var androidbaseRule = new etree.SubElement(androidRoot, 'access');
-    androidbaseRule.set('hap-rule','yes');
-    androidbaseRule.set('origin', baseUrlPattern);
+        // get the android platform section and create it if it does not exist
+        var androidRoot = config.doc.find('platform[@name=\'android\']');
+        if (!androidRoot) {
+            androidRoot = etree.SubElement(config.doc.getroot(), 'platform');
+            androidRoot.set('name', 'android');
+        }
     
-    var iosBaseRule = new etree.SubElement(iosRoot, 'access');
-    iosBaseRule.set('hap-rule','yes');
-    iosBaseRule.set('origin', baseUrlPattern);
+        // get the ios platform section and create it if it does not exist
+        var iosRoot = config.doc.find('platform[@name=\'ios\']');
+        if (!iosRoot) {
+            iosRoot = etree.SubElement(config.doc.getroot(), 'platform');
+            iosRoot.set('name', 'ios');
+        }
     
-    var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
-
-    // add additional access rules
-    if (manifest.mjs_urlAccess && manifest.mjs_urlAccess instanceof Array) {
-        manifest.mjs_urlAccess.forEach(function (item) {
-            // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
-            if (item.url.indexOf(baseUrl) !== 0 ) {
-                var androidAccessEl = new etree.SubElement(androidRoot, 'access');
-                androidAccessEl.set('hap-rule','yes');
-                androidAccessEl.set('origin', item.url);
-                
-                var iosAccessEl = new etree.SubElement(iosRoot, 'access');
-                iosAccessEl.set('hap-rule','yes');
-                iosAccessEl.set('origin', item.url);
-            }
-        });
+        // determine base rule based on the start_url and the scope
+        var baseUrlPattern = manifest.start_url;
+        if (manifest.scope && manifest.scope.length) {
+            baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
+        }
+        
+        baseUrlPattern = url.resolve(baseUrlPattern, '*');
+        
+        // add base rule as an access rule for Android
+        var androidAccessBaseRule = new etree.SubElement(androidRoot, 'access');
+        androidAccessBaseRule.set('hap-rule','yes');
+        androidAccessBaseRule.set('origin', baseUrlPattern);
+        
+        // add base rule as a navigation rule for Android
+        var androidNavigationBaseRule = new etree.SubElement(androidRoot, 'allow-navigation');
+        androidNavigationBaseRule.set('hap-rule','yes');
+        androidNavigationBaseRule.set('href', baseUrlPattern);
+        
+        // add base rule as an svvrdd rule for iOS
+        var iosBaseAccessRule = new etree.SubElement(iosRoot, 'access');
+        iosBaseAccessRule.set('hap-rule','yes');
+        iosBaseAccessRule.set('origin', baseUrlPattern);
+        
+        var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
+    
+        // add additional access rules
+        if (manifest.mjs_access_whitelist && manifest.mjs_access_whitelist instanceof Array) {
+            manifest.mjs_access_whitelist.forEach(function (item) {
+                // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
+                if (item.url.indexOf(baseUrl) !== 0 ) {
+                    // add as an access rule for Android
+                    var androidAccessEl = new etree.SubElement(androidRoot, 'access');
+                    androidAccessEl.set('hap-rule','yes');
+                    androidAccessEl.set('origin', item.url);
+    
+                    // add as a navigation rule for Android
+                    var androidNavigationEl = new etree.SubElement(androidRoot, 'allow-navigation');
+                    androidNavigationEl.set('hap-rule','yes');
+                    androidNavigationEl.set('href', item.url);  
+                    
+                    // add as an access rule for iOS
+                    var iosAccessEl = new etree.SubElement(iosRoot, 'access');
+                    iosAccessEl.set('hap-rule','yes');
+                    iosAccessEl.set('origin', item.url);
+                }
+            });
+        }
     }
 }
 
