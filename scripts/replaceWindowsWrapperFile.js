@@ -6,8 +6,7 @@ var createConfigParser = require('./createConfigParser'),
     url = require('url'),
     config,
   	windowsConfig,
-  	projectRoot,
-  	etree;
+  	projectRoot;
 
 var logger = {
   log: function () {
