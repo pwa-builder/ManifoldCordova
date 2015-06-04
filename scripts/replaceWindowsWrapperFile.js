@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
-var createConfigParser = require('./createConfigParser'),
-    fs = require('fs'),
+var fs = require('fs'),
     path = require('path'),
     url = require('url'),
-    config,
-  	windowsConfig,
   	projectRoot;
 
 var logger = {
@@ -50,7 +47,7 @@ module.exports = function (context) {
   projectRoot = context.opts.projectRoot;
   var filename = "wrapper";
 
-  var sourcePath = path.join(projectRoot, "assets", "windows", "wrapper.html");
+  var sourcePath = path.resolve(__dirname, "..", "assets", "windows", "wrapper.html");
   var destPath = path.join(projectRoot, "platforms","windows", "www", filename + ".html");
 
   logger.log('Copying wrapper html file for the windows platform from '+ sourcePath + ' to ' + destPath + '.');
@@ -64,8 +61,8 @@ module.exports = function (context) {
 
     console.log("Finished copying wrapper html file for the windows platform.");
 
-    var sourcePath = path.join(projectRoot, "assets", "windows", "wrapper.js");
-    var destPath = path.join(projectRoot, "windows", "www", "js", filename +".js");
+    var sourcePath = path.resolve(__dirname, "..", "assets", "windows", "wrapper.js");
+    var destPath = path.join(projectRoot, "platforms", "windows", "www", "js", filename +".js");
 
     logger.log('Copying wrapper js file for the windows platform from '+ sourcePath + ' to ' + destPath + '.');
 
@@ -77,7 +74,7 @@ module.exports = function (context) {
 
       console.log("Finished copying wrapper js file for the windows platform.");
 
-      var sourcePath = path.join(projectRoot,"assets", "windows", "wrapper.css");
+      var sourcePath = path.resolve(__dirname, "..", "assets", "windows", "wrapper.css");
       var destPath = path.join(projectRoot, "platforms", "windows", "www", "css", filename + ".css");
 
       logger.log('Copying wrapper css file for the windows platform from '+ sourcePath + ' to ' + destPath + '.');
