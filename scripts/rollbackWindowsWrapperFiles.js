@@ -37,20 +37,21 @@ function deleteFile(path) {
 
 module.exports = function (context) {
   Q = context.requireCordovaModule('q');
+  var projectRoot = context.opts.projectRoot;
   var task = Q.defer();
 
-  var destPath = path.resolve("platforms\\windows\\www\\wrapper.html");
+  var destPath = path.join(projectRoot, "platforms", "windows", "www", "wrapper.html");
   if (fs.existsSync(destPath)) {
     deleteFile(destPath);
   }
 
-  destPath = path.resolve("platforms\\windows\\www\\js\\wrapper.js");
+  destPath = path.join(projectRoot, "platforms", "windows", "www", "js", "wrapper.js");
 
   if (fs.existsSync(destPath)) {
     deleteFile(destPath);
   }
 
-  destPath = path.resolve("platforms\\windows\\www\\css\\wrapper.css");
+  destPath = path.join(projectRoot, "platforms", "windows", "www", "css", "wrapper.css");
 
   if (fs.existsSync(destPath)) {
     deleteFile(destPath);
@@ -58,6 +59,9 @@ module.exports = function (context) {
 
   Q.allSettled(pendingTasks).then(function (e) {
     console.log("Finished removing assets for the windows platform.");
+
+    // TODO: restore content source to index.html in all platforms.
+
     task.resolve();
   });
 

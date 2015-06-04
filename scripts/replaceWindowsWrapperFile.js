@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
-var fs = require('fs'),
+var createConfigParser = require('./createConfigParser'),
+    fs = require('fs'),
     path = require('path'),
     url = require('url'),
-    currentPath,
-    targetPath;
+    config,
+  	windowsConfig,
+  	projectRoot,
+  	etree;
 
 var logger = {
   log: function () {
@@ -43,8 +46,13 @@ function copyFile(source, target, callback) {
 module.exports = function (context) {
   // move contents of the assets folder to the windows platform dir
   var Q = context.requireCordovaModule('q');
-  var sourcePath = path.resolve(__dirname, "..", "assets\\windows\\wrapper.html");
-  var destPath = path.resolve("platforms\\windows\\www\\wrapper.html");
+
+  // create a parser for the Cordova configuration
+  projectRoot = context.opts.projectRoot;
+  var filename = "wrapper";
+
+  var sourcePath = path.join(projectRoot, "assets", "windows", "wrapper.html");
+  var destPath = path.join(projectRoot, "platforms","windows", "www", filename + ".html");
 
   logger.log('Copying wrapper html file for the windows platform from '+ sourcePath + ' to ' + destPath + '.');
 
@@ -57,8 +65,8 @@ module.exports = function (context) {
 
     console.log("Finished copying wrapper html file for the windows platform.");
 
-    var sourcePath = path.resolve(__dirname, "..", "assets\\windows\\wrapper.js");
-    var destPath = path.resolve("platforms\\windows\\www\\js\\wrapper.js");
+    var sourcePath = path.join(projectRoot, "assets", "windows", "wrapper.js");
+    var destPath = path.join(projectRoot, "windows", "www", "js", filename +".js");
 
     logger.log('Copying wrapper js file for the windows platform from '+ sourcePath + ' to ' + destPath + '.');
 
@@ -70,8 +78,8 @@ module.exports = function (context) {
 
       console.log("Finished copying wrapper js file for the windows platform.");
 
-      var sourcePath = path.resolve(__dirname, "..", "assets\\windows\\wrapper.css");
-      var destPath = path.resolve("platforms\\windows\\www\\css\\wrapper.css");
+      var sourcePath = path.join(projectRoot,"assets", "windows", "wrapper.css");
+      var destPath = path.join(projectRoot, "platforms", "windows", "www", "css", filename + ".css");
 
       logger.log('Copying wrapper css file for the windows platform from '+ sourcePath + ' to ' + destPath + '.');
 
