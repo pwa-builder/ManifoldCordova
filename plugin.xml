@@ -38,6 +38,7 @@
     <!-- windows -->
     <platform name="windows">
       <hook type="after_prepare" src="scripts/replaceWindowsWrapperFile.js" />
+      <hook type="before_plugin_rm" src="scripts/rollbackWindowsWrapperFiles.js" />
       <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
         <merges target="" />
       </js-module>
