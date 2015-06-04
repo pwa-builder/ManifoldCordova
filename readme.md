@@ -205,3 +205,6 @@ Cordova for Android and iOS platforms provide a security policy to control which
 The Windows and Windows Phone platforms do not provide control for these kind of requests, and they will be allowed.
 
 
+## Changelog
+
+Releases are documented in [GitHub](https://github.com/manifoldjs/ManifoldCordova/releases).
