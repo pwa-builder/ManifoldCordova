@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
-var fs = require('fs'),
+var createConfigParser = require('./createConfigParser'),
+    fs = require('fs'),
     path = require('path'),
     url = require('url'),
     pendingTasks = [],
-    Q;
+    Q,
+    config,
+  	projectRoot,
+  	etree;
 
 var logger = {
   log: function () {
@@ -35,6 +39,16 @@ function deleteFile(path) {
   });
 }
 
+// Configure Cordova configuration parser
+function configureParser(context) {
+  var cordova_util = context.requireCordovaModule('cordova-lib/src/cordova/util'),
+  ConfigParser = context.requireCordovaModule('cordova-lib/src/configparser/ConfigParser');
+  etree = context.requireCordovaModule('cordova-lib/node_modules/elementtree');
+
+  var xml = cordova_util.projectConfig(context.opts.projectRoot);
+  config = createConfigParser(xml, etree, ConfigParser);
+}
+
 module.exports = function (context) {
   Q = context.requireCordovaModule('q');
   var projectRoot = context.opts.projectRoot;
@@ -60,7 +74,16 @@ module.exports = function (context) {
   Q.allSettled(pendingTasks).then(function (e) {
     console.log("Finished removing assets for the windows platform.");
 
-    // TODO: restore content source to index.html in all platforms.
+    // restore content source to index.html in all platforms.
+    configureParser(context);
+    if (config) {
+      console.log("Restoring content source value to index.html");
+      config.setAttribute('content', 'src', 'index.html');
+      config.write();
+    }
+    else {
+      console.log("could not load config.xml file");
+    }
 
     task.resolve();
   });
