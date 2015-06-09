@@ -50,6 +50,11 @@ function configureParser(context) {
 }
 
 module.exports = function (context) {
+  // If the plugin is not being removed, cancel the script
+  if (context.opts.plugins.indexOf(context.opts.plugin.id) == -1) {
+    return;
+  }
+  
   Q = context.requireCordovaModule('q');
   var projectRoot = context.opts.projectRoot;
   var task = Q.defer();
