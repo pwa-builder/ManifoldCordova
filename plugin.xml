@@ -11,11 +11,11 @@
 
     <dependency id="cordova-plugin-whitelist" version=">=1.0.1" />
     <dependency id="cordova-plugin-network-information" version=">=1.0.0" />
-    
+
     <hook type="before_prepare" src="scripts/updateConfiguration.js" />
     <hook type="after_prepare" src="scripts/updateConfigurationAfterPrepare.js" />
     <hook type="after_build" src="scripts/updateConfigurationAfterBuild.js" />
-  
+
     <js-module src="www/hostedWebApp.js" name="hostedwebapp">
         <clobbers target="hostedwebapp" />
     </js-module>
@@ -37,6 +37,8 @@
 
     <!-- windows -->
     <platform name="windows">
+      <hook type="after_prepare" src="scripts/replaceWindowsWrapperFile.js" />
+      <hook type="before_plugin_rm" src="scripts/rollbackWindowsWrapperFiles.js" />
       <js-module src="src/windows/HostedWebAppPluginProxy.js" name="HostedWebAppPluginProxy">
         <merges target="" />
       </js-module>

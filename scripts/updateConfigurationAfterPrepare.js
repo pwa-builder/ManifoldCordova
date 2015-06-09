@@ -24,7 +24,7 @@ function configureParser(context) {
 
   var xml = cordova_util.projectConfig(projectRoot);
   config = createConfigParser(xml, etree, ConfigParser);
-  
+
   var windowsDir = path.join(projectRoot, 'platforms', 'windows');
   if (fs.existsSync(windowsDir)) {
 	  var windowsXml = cordova_util.projectConfig(windowsDir);
@@ -45,11 +45,11 @@ module.exports = function (context) {
 
   // save the updated configuration
   config.write();
-  
+
   if (windowsConfig) {
 	  // Patch for windows: restoring the start page to index.html
 	  logger.log('Restoring local start page in windows configuration...');
-	  windowsConfig.setAttribute('content', 'src', 'index.html');
+	  windowsConfig.setAttribute('content', 'src', 'wrapper.html');
 	  windowsConfig.write();
   }
 }
