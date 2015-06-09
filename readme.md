@@ -40,7 +40,7 @@ When the application is launched, the plugin automatically handles navigation to
 Lastly, since network connectivity is essential to the operation of a hosted web application, the plugin implements a basic offline feature that will show an offline page whenever connectivity is lost and will prevent users from interacting with the application until the connection is restored.
 
 ## Installation
-`cordova plugin add com-manifoldjs-hostedwebapp`
+`cordova plugin add cordova-plugin-hostedwebapp`
 
 > **IMPORTANT:** Before using the plugin, make sure to copy the W3C manifest file to the **root** folder of the Cordova application, alongside **config.xml**, and name it **manifest.json**.
 
@@ -68,7 +68,7 @@ The plugin enables using content hosted in a web site inside a Cordova applicati
 	> **Note:** You can find a sample manifest file at the start of this document. 
  
 1. Add the **Hosted Web Application** plugin to the project.  
-	`cordova plugin add com-manifoldjs-hostedwebapp`
+	`cordova plugin add cordova-plugin-hostedwebapp`
 
 1. Add one or more platforms, for example, to support Android.  
 	`cordova platform add android`
@@ -205,3 +205,6 @@ Cordova for Android and iOS platforms provide a security policy to control which
 The Windows and Windows Phone platforms do not provide control for these kind of requests, and they will be allowed.
 
 
+## Changelog
+
+Releases are documented in [GitHub](https://github.com/manifoldjs/ManifoldCordova/releases).

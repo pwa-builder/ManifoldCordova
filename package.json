@@ -1,9 +1,9 @@
 {
-  "name": "com-manifoldjs-hostedwebapp",
+  "name": "cordova-plugin-hostedwebapp",
   "version": "0.1.0",
   "description": "Hosted Web App Plugin",
   "cordova": {
-    "id": "com-manifoldjs-hostedwebapp",
+    "id": "cordova-plugin-hostedwebapp",
     "platforms": [
       "android",
       "windows",
