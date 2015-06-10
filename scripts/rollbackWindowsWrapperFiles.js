@@ -55,8 +55,15 @@ module.exports = function (context) {
     return;
   }
   
-  Q = context.requireCordovaModule('q');
   var projectRoot = context.opts.projectRoot;
+  
+  // if the windows folder does not exist, cancell the script
+  var windowsPath = path.join(projectRoot, "platforms","windows");
+  if (!fs.existsSync(windowsPath)) {
+    return;
+  }
+  
+  Q = context.requireCordovaModule('q');
   var task = Q.defer();
 
   var destPath = path.join(projectRoot, "platforms", "windows", "www", "wrapper.html");
