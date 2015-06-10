@@ -167,6 +167,21 @@ function hideExtendedSplashScreen(e) {
     extendedSplashScreen.style.display = "none";
 }
 
+// handle the hardware backbutton
+function navigateBack(e) {
+    if (!_mainView.canGoBack) {
+        return false;
+    }
+
+    try {
+        _mainView.goBack();
+    } catch (err) {
+        return false;
+    }
+
+    return true;
+}
+
 module.exports = {
     // loads the W3C manifest file and parses it
     loadManifest: function (successCallback, errorCallback, args) {
@@ -235,4 +250,5 @@ module.exports.loadManifest(
         _mainView.addEventListener("MSWebViewDOMContentLoaded", hideExtendedSplashScreen, false);
 
         cordova.fireDocumentEvent("webviewCreated", { webView: _mainView });
+        WinJS.Application.onbackclick = navigateBack;
     });
