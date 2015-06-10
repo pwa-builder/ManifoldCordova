@@ -17,7 +17,7 @@ function initializeContext(testDir) {
   var ctx = {
     opts : {
       plugin: {
-        id: 'cordova-plugin-hostedwebapp'
+        id: 'com-manifoldjs-hostedwebapp'
       },
       projectRoot : testDir
     }
