@@ -1,7 +1,7 @@
 'use strict';
 process.env.NODE_ENV = 'test';
 
-var updateConfiguration = require('../updateConfiguration');
+var updateConfiguration = require('../updateConfigurationBeforePrepare');
 var tu = require('./test-utils');
 
 var assert = require('assert');
