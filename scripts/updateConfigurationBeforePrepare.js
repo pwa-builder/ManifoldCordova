@@ -116,7 +116,7 @@ function configureParser(context) {
     etree = context.requireCordovaModule('cordova-lib/node_modules/elementtree');
 
     var xml = cordova_util.projectConfig(projectRoot);
-    config = createConfigParser(xml, etree, ConfigParser);
+    config = createConfigParser(xml, etree, ConfigParser);   
 }
 
 function processAccessRules(manifest) {
@@ -539,8 +539,10 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
 function processWindowsIcons(manifestIcons) {
     var iconSizes = [
         "30x30",
+        "44x44",
         "106x106",
         "70x70",
+        "71x71",
         "170x170",
         "150x150",
         "360x360",
