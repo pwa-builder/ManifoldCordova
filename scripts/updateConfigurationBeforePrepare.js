@@ -594,7 +594,7 @@ module.exports = function (context) {
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
-        logger.error('ERROR: Failed to read manifest at \'' + manifestPath + '\'.');
+        logger.error('Failed to read manifest at \'' + manifestPath + '\'.');
         return task.reject(err);
       }
 
@@ -602,7 +602,7 @@ module.exports = function (context) {
       var appManifestPath = path.join(projectRoot, 'www', 'manifest.json');
       fs.writeFile(appManifestPath, manifestJson, function (err) {
         if (err) {
-          logger.error('ERROR: Failed to copy manifest to \'www\' folder.');
+          logger.error('Failed to copy manifest to \'www\' folder.');
           return task.reject(err);
         }
 
@@ -617,7 +617,7 @@ module.exports = function (context) {
         }
 
         if (!(start_url && start_url.hostname && start_url.protocol)) { 
-          logger.error('ERROR: Invalid or incomplete W3C manifest.');
+          logger.error('Invalid or incomplete W3C manifest.');
           var err = new Error('The start_url member in the manifest is required and must be a full URL.');
           return task.reject(err);
         }
