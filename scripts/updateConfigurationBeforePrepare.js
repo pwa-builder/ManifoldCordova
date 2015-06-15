@@ -594,7 +594,7 @@ module.exports = function (context) {
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
-        logger.error('ERROR: Failed to read manifest in at \'' + manifestPath + '\'.');
+        logger.error('ERROR: Failed to read manifest at \'' + manifestPath + '\'.');
         return task.reject(err);
       }
 
