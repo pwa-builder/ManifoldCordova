@@ -10,11 +10,6 @@ var _whiteList = [];
 
 // creates a webview to host content
 function configureHost(url, zOrder, display) {
-
-    // workaround to avoid the webview scaling issue
-    var div = document.getElementById("deviceready");
-    div.classList.remove("blink");
-
     var webView = document.createElement(cordova.platformId === 'windows8' ? 'iframe' : 'x-ms-webview');
     var style = webView.style;
     style.position = 'absolute';
@@ -166,6 +161,27 @@ function configureWhiteList(manifest) {
     }
 }
 
+// hides the extended splash screen
+function hideExtendedSplashScreen(e) {
+    var extendedSplashScreen = document.getElementById("extendedSplashScreen");
+    extendedSplashScreen.style.display = "none";
+}
+
+// handle the hardware backbutton
+function navigateBack(e) {
+    if (!_mainView.canGoBack) {
+        return false;
+    }
+
+    try {
+        _mainView.goBack();
+    } catch (err) {
+        return false;
+    }
+
+    return true;
+}
+
 module.exports = {
     // loads the W3C manifest file and parses it
     loadManifest: function (successCallback, errorCallback, args) {
@@ -231,5 +247,8 @@ module.exports.loadManifest(
         configureOfflineSupport('offline.html');
         configureWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
+        _mainView.addEventListener("MSWebViewDOMContentLoaded", hideExtendedSplashScreen, false);
+
         cordova.fireDocumentEvent("webviewCreated", { webView: _mainView });
+        WinJS.Application.onbackclick = navigateBack;
     });
