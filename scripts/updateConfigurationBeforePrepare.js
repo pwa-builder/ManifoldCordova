@@ -155,10 +155,19 @@ function processAccessRules(manifest) {
         // determine base rule based on the start_url and the scope
         var baseUrlPattern = manifest.start_url;
         if (manifest.scope && manifest.scope.length) {
-            baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
+            var parsedScopeUrl = url.parse(manifest.scope);
+            if (parsedScopeUrl.protocol) {
+              baseUrlPattern = manifest.scope;
+            } else {
+              baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
+            }
         }
         
-        baseUrlPattern = url.resolve(baseUrlPattern, '*');
+        // Add '/*' at the end of the base rule
+        if (baseUrlPattern.indexOf('/', baseUrlPattern.length - 1) !== -1) {
+          baseUrlPattern = baseUrlPattern.substring(0, baseUrlPattern.length - 1);
+        }
+        baseUrlPattern = baseUrlPattern + '/*';
         
         // add base rule as an access rule for Android
         var androidAccessBaseRule = new etree.SubElement(androidRoot, 'access');

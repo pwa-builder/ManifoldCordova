@@ -1,0 +1,7 @@
+{
+    "start_url": "http://wat-docs.azurewebsites.net/",
+    "name": "WAT Documentation",
+	"orientation": "landscape",
+	"display": "fullscreen",
+	"scope": "http://www.domain.com"
+}
