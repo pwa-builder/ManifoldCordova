@@ -163,11 +163,13 @@ function processAccessRules(manifest) {
             }
         }
         
-        // Add '/*' at the end of the base rule
-        if (baseUrlPattern.indexOf('/', baseUrlPattern.length - 1) !== -1) {
-          baseUrlPattern = baseUrlPattern.substring(0, baseUrlPattern.length - 1);
+        // If there is no query string in the base rul, add '/*' at the end
+        if (!url.parse(baseUrlPattern).query) {
+            if (baseUrlPattern.indexOf('/', baseUrlPattern.length - 1) !== -1) {
+              baseUrlPattern = baseUrlPattern.substring(0, baseUrlPattern.length - 1);
+            }
+            baseUrlPattern = baseUrlPattern + '/*';
         }
-        baseUrlPattern = baseUrlPattern + '/*';
         
         // add base rule as an access rule for Android
         var androidAccessBaseRule = new etree.SubElement(androidRoot, 'access');
