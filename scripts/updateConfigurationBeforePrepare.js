@@ -163,12 +163,9 @@ function processAccessRules(manifest) {
             }
         }
         
-        // If there is no query string in the base rul, add '/*' at the end
-        if (!url.parse(baseUrlPattern).query) {
-            if (baseUrlPattern.indexOf('/', baseUrlPattern.length - 1) !== -1) {
-              baseUrlPattern = baseUrlPattern.substring(0, baseUrlPattern.length - 1);
-            }
-            baseUrlPattern = baseUrlPattern + '/*';
+        // If there are no wildcards in the pattern, add '*' at the end
+        if (baseUrlPattern.indexOf('*') === -1) {
+            baseUrlPattern = url.resolve(baseUrlPattern, '*');
         }
         
         // add base rule as an access rule for Android

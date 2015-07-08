@@ -314,11 +314,11 @@ describe('updateConfigurationBeforePrepare.js', function (){
       var content = fs.readFileSync(configXML).toString();
 
       // rules for android
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com\/\*" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/\*.domain.com\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
       
       // rules for ios
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
       
       done();
     });
