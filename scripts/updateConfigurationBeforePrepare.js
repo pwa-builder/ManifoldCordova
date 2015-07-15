@@ -155,10 +155,18 @@ function processAccessRules(manifest) {
         // determine base rule based on the start_url and the scope
         var baseUrlPattern = manifest.start_url;
         if (manifest.scope && manifest.scope.length) {
-            baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
+            var parsedScopeUrl = url.parse(manifest.scope);
+            if (parsedScopeUrl.protocol) {
+              baseUrlPattern = manifest.scope;
+            } else {
+              baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
+            }
         }
         
-        baseUrlPattern = url.resolve(baseUrlPattern, '*');
+        // If there are no wildcards in the pattern, add '*' at the end
+        if (baseUrlPattern.indexOf('*') === -1) {
+            baseUrlPattern = url.resolve(baseUrlPattern, '*');
+        }
         
         // add base rule as an access rule for Android
         var androidAccessBaseRule = new etree.SubElement(androidRoot, 'access');
@@ -594,7 +602,7 @@ module.exports = function (context) {
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
-        logger.error('ERROR: Failed to read manifest in at \'' + manifestPath + '\'.');
+        logger.error('Failed to read manifest at \'' + manifestPath + '\'.');
         return task.reject(err);
       }
 
@@ -602,11 +610,25 @@ module.exports = function (context) {
       var appManifestPath = path.join(projectRoot, 'www', 'manifest.json');
       fs.writeFile(appManifestPath, manifestJson, function (err) {
         if (err) {
-          logger.error('ERROR: Failed to copy manifest to \'www\' folder.');
+          logger.error('Failed to copy manifest to \'www\' folder.');
           return task.reject(err);
         }
 
         var manifest = JSON.parse(manifestJson);
+
+        // The start_url member is required and must be a full URL.
+        // Even though a relative URL is a valid according to the W3C spec, a full URL 
+        // is needed because the plugin cannot determine the manifest's origin.
+        var start_url;
+        if (manifest.start_url) {
+          start_url = url.parse(manifest.start_url);
+        }
+
+        if (!(start_url && start_url.hostname && start_url.protocol)) { 
+          logger.error('Invalid or incomplete W3C manifest.');
+          var err = new Error('The start_url member in the manifest is required and must be a full URL.');
+          return task.reject(err);
+        }
 
         // update name, start_url, orientation, and fullscreen from manifest
         if (manifest.short_name) {

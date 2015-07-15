@@ -59,7 +59,7 @@ function initializeContext(testDir) {
   return ctx;
 }
 
-describe('updateConfiguration.js', function (){
+describe('updateConfigurationBeforePrepare.js', function (){
   beforeEach(function () {
     tu.copyRecursiveSync(assetsDirectory, workingDirectory);
   });
@@ -104,7 +104,7 @@ describe('updateConfiguration.js', function (){
   });
 
   it('Should not update name if it is missing in manifest.json', function (done) {
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var testDir = path.join(workingDirectory, 'jsonPropertiesMissing');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
 
@@ -146,7 +146,7 @@ describe('updateConfiguration.js', function (){
   });
 
   it('Should not update orientation if it is missing in manifest.json', function (done){
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var testDir = path.join(workingDirectory, 'jsonPropertiesMissing');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
 
@@ -187,7 +187,7 @@ describe('updateConfiguration.js', function (){
   });
 
   it('Should not update fullscreen if it is missing in manifest.json', function (done){
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var testDir = path.join(workingDirectory, 'jsonPropertiesMissing');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
 
@@ -214,7 +214,7 @@ describe('updateConfiguration.js', function (){
   });
 
   it('Should keep existing access rules unchanged in config.xml', function (done){
-    var testDir = path.join(workingDirectory, 'jsonEmpty');
+    var testDir = path.join(workingDirectory, 'jsonPropertiesMissing');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
 
@@ -267,7 +267,7 @@ describe('updateConfiguration.js', function (){
     });
   });
 
-  it('Should add access rules for scope in config.xml', function (done){
+  it('Should add access rules for scope in config.xml if scope is a relative URL', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
@@ -281,6 +281,44 @@ describe('updateConfiguration.js', function (){
       
       // rules for ios
       assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      
+      done();
+    });
+  });
+
+  it('Should add access rules for scope in config.xml if scope is a full URL', function (done){
+    var testDir = path.join(workingDirectory, 'fullUrlForScope');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/www.domain.com\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/www.domain.com\/\*" \/>[\s\S]*<\/platform>/));
+      
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/www.domain.com\/\*" \/>[\s\S]*<\/platform>/));
+      
+      done();
+    });
+  });
+
+  it('Should add access rules for scope in config.xml if scope is a full URL with wildcard as subdomain', function (done){
+    var testDir = path.join(workingDirectory, 'wildcardSubdomainForScope');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+
+      // rules for android
+      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
+      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
+      
+      // rules for ios
+      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
       
       done();
     });
