@@ -1,4 +1,4 @@
-var setupExtendedSplashScreen, updateSplashScreenPositioning,
+﻿var setupExtendedSplashScreen, updateSplashScreenPositioning,
     splashScreen, splashScreenEl, splashScreenImageEl,
     isWindows = navigator.appVersion.indexOf("Windows Phone 8.1") === -1;
 
