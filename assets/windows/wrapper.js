@@ -1,24 +1,28 @@
 ﻿var setupExtendedSplashScreen, updateSplashScreenPositioning,
     splashScreen, splashScreenEl, splashScreenImageEl,
-    isWindows = navigator.appVersion.indexOf("Windows Phone 8.1") === -1;
+    isWindows = navigator.appVersion.indexOf("Windows Phone") === -1,
+    isWindowsPhone10 = navigator.appVersion.indexOf("Windows Phone 10") !== -1;
 
-WinJS.Application.addEventListener("activated", function (e) {
-    if (e.detail.kind === Windows.ApplicationModel.Activation.ActivationKind.launch) {
-        splashScreen = e.detail.splashScreen;
+// TODO: Need to fix styling issues whith the extended splash screen for Windows Phone 10 (disabled for now)
+if (!isWindowsPhone10) {
+    WinJS.Application.addEventListener("activated", function (e) {
+        if (e.detail.kind === Windows.ApplicationModel.Activation.ActivationKind.launch) {
+            splashScreen = e.detail.splashScreen;
 
-        // Listen for window resize events to reposition the extended splash screen image accordingly.
-        // This is important to ensure that the extended splash screen is formatted properly in response to snapping, unsnapping, rotation, etc...
-        window.addEventListener("resize", updateSplashPositioning, false);
+            // Listen for window resize events to reposition the extended splash screen image accordingly.
+            // This is important to ensure that the extended splash screen is formatted properly in response to snapping, unsnapping, rotation, etc...
+            window.addEventListener("resize", updateSplashPositioning, false);
 
-        var previousExecutionState = e.detail.previousExecutionState;
-        var state = Windows.ApplicationModel.Activation.ApplicationExecutionState;
-        if (previousExecutionState === state.notRunning
-            || previousExecutionState === state.terminated
-            || previousExecutionState === state.closedByUser) {
-            setupExtendedSplashScreen();
+            var previousExecutionState = e.detail.previousExecutionState;
+            var state = Windows.ApplicationModel.Activation.ApplicationExecutionState;
+            if (previousExecutionState === state.notRunning
+                || previousExecutionState === state.terminated
+                || previousExecutionState === state.closedByUser) {
+                setupExtendedSplashScreen();
+            }
         }
-    }
-}, false);
+    }, false);
+}
 
 setupExtendedSplashScreen = function () {
     splashScreenEl = document.getElementById("extendedSplashScreen");
