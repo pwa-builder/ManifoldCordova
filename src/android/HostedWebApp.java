@@ -35,6 +35,7 @@ public class HostedWebApp extends CordovaPlugin {
     private JSONObject manifestObject;
 
     private CordovaActivity activity;
+    private CordovaPlugin whiteListPlugin;
 
     private LinearLayout rootLayout;
     private WebView offlineWebView;
@@ -182,12 +183,26 @@ public class HostedWebApp extends CordovaPlugin {
     }
 
     @Override
+    public Boolean shouldAllowRequest(String url) {
+        CordovaPlugin whiteListPlugin = this.getWhitelistPlugin();
+
+        if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowRequest(url)) {
+            Log.w(LOG_TAG, String.format("Whitelist rejection: url='%s'", url));
+        }
+
+        // do not alter default behavior.
+        return super.shouldAllowRequest(url);
+    }
+
+    @Override
     public boolean onOverrideUrlLoading(String url) {
-        CordovaPlugin whiteListPlugin = this.webView.getPluginManager().getPlugin("Whitelist");
+        CordovaPlugin whiteListPlugin = this.getWhitelistPlugin();
 
         if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowNavigation(url)) {
             // If the URL is not in the list URLs to allow navigation, open the URL in the external browser
             // (code extracted from CordovaLib/src/org/apache/cordova/CordovaWebViewImpl.java)
+            Log.w(LOG_TAG, String.format("Whitelist rejection: url='%s'", url));
+
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.addCategory(Intent.CATEGORY_BROWSABLE);
@@ -199,7 +214,7 @@ public class HostedWebApp extends CordovaPlugin {
                 } else {
                     intent.setData(uri);
                 }
-                cordova.getActivity().startActivity(intent);
+                this.activity.startActivity(intent);
             } catch (android.content.ActivityNotFoundException e) {
                 e.printStackTrace();
             }
@@ -212,6 +227,14 @@ public class HostedWebApp extends CordovaPlugin {
 
     public JSONObject getManifest() {
         return this.manifestObject;
+    }
+
+    private CordovaPlugin getWhitelistPlugin() {
+        if (this.whiteListPlugin == null) {
+            this.whiteListPlugin = this.webView.getPluginManager().getPlugin("Whitelist");
+        }
+
+        return whiteListPlugin;
     }
 
     private boolean assetExists(String asset) {
