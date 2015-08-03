@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.content.res.AssetManager;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 * This class manipulates the Web App W3C manifest.
 */
 public class HostedWebApp extends CordovaPlugin {
+    private static final String LOG_TAG = "HostedWebApp";
     private static final String DEFAULT_MANIFEST_FILE = "manifest.json";
     private static final String OFFLINE_PAGE = "offline.html";
     private static final String OFFLINE_PAGE_TEMPLATE = "<html><body><div style=\"top:50%%;text-align:center;position:absolute\">%s</div></body></html>";
@@ -35,6 +37,7 @@ public class HostedWebApp extends CordovaPlugin {
     private JSONObject manifestObject;
 
     private CordovaActivity activity;
+    private CordovaPlugin whiteListPlugin;
 
     private LinearLayout rootLayout;
     private WebView offlineWebView;
@@ -182,12 +185,26 @@ public class HostedWebApp extends CordovaPlugin {
     }
 
     @Override
+    public Boolean shouldAllowRequest(String url) {
+        CordovaPlugin whiteListPlugin = this.getWhitelistPlugin();
+
+        if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowRequest(url)) {
+            Log.w(LOG_TAG, String.format("Whitelist rejection: url='%s'", url));
+        }
+
+        // do not alter default behavior.
+        return super.shouldAllowRequest(url);
+    }
+
+    @Override
     public boolean onOverrideUrlLoading(String url) {
-        CordovaPlugin whiteListPlugin = this.webView.getPluginManager().getPlugin("Whitelist");
+        CordovaPlugin whiteListPlugin = this.getWhitelistPlugin();
 
         if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowNavigation(url)) {
             // If the URL is not in the list URLs to allow navigation, open the URL in the external browser
             // (code extracted from CordovaLib/src/org/apache/cordova/CordovaWebViewImpl.java)
+            Log.w(LOG_TAG, String.format("Whitelist rejection: url='%s'", url));
+
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.addCategory(Intent.CATEGORY_BROWSABLE);
@@ -199,7 +216,7 @@ public class HostedWebApp extends CordovaPlugin {
                 } else {
                     intent.setData(uri);
                 }
-                cordova.getActivity().startActivity(intent);
+                this.activity.startActivity(intent);
             } catch (android.content.ActivityNotFoundException e) {
                 e.printStackTrace();
             }
@@ -212,6 +229,14 @@ public class HostedWebApp extends CordovaPlugin {
 
     public JSONObject getManifest() {
         return this.manifestObject;
+    }
+
+    private CordovaPlugin getWhitelistPlugin() {
+        if (this.whiteListPlugin == null) {
+            this.whiteListPlugin = this.webView.getPluginManager().getPlugin("Whitelist");
+        }
+
+        return whiteListPlugin;
     }
 
     private boolean assetExists(String asset) {
