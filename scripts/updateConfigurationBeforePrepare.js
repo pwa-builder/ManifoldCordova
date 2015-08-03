@@ -79,34 +79,34 @@ function downloadImage(imageUrl, imagesPath, imageSrc) {
   });          
 }
 
-// normalize icon list and download to res folder
-function getManifestIcons(manifest) {
-    var iconList = [];
-    if (manifest.icons && manifest.icons instanceof Array) {
-        manifest.icons.forEach(function (icon) {
-            var imageUrl = url.resolve(manifest.start_url, icon.src);
-            icon.src = url.parse(imageUrl).pathname;
-            var sizes = icon.sizes.toLowerCase().split(' ');
-            sizes.forEach(function (iconSize) {
-                var dimensions = iconSize.split('x');
-                var element = {
-                  "src": icon.src,
-                  "width": dimensions[0],
-                  "height": dimensions[1],
-                  "density": icon.density,
-                  "type": icon.type
-                };
+// normalize image list and download images to project folder
+function processImageList(images, baseUrl) {
+  var imageList = [];
+  if (images && images instanceof Array) {
+    images.forEach(function (image) {
+      var imageUrl = url.resolve(baseUrl, image.src);
+      image.src = url.parse(imageUrl).pathname;
+      var sizes = image.sizes.toLowerCase().split(' ');
+      sizes.forEach(function (imageSize) {
+        var dimensions = imageSize.split('x');
+        var element = {
+          "src": image.src,
+          "width": dimensions[0],
+          "height": dimensions[1],
+          "density": image.density,
+          "type": image.type
+        };
 
-                iconList.push(element);
-            });
+        imageList.push(element);
+      });
 
-            var iconsPath = path.dirname(path.join(projectRoot, icon.src));
+      var imagePath = path.dirname(path.join(projectRoot, image.src));
             
-            downloadImage(imageUrl, iconsPath, icon.src);
-        });
-    }
+      downloadImage(imageUrl, imagePath, image.src);
+    });
+  }
 
-    return iconList;
+  return imageList;
 }
 
 // Configure Cordova configuration parser
@@ -230,7 +230,7 @@ function isValidFormat(icon, validFormats) {
   return false;
 }
 
-function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSizes, validFormats) {
+function processImagesBySize(platform, manifestImages, splashScreenSizes, iconSizes, validFormats) {
     // get platform section and create it if it does not exist
     var root = config.doc.find('platform[@name=\'' + platform + '\']');
     if (!root) {
@@ -240,7 +240,7 @@ function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSize
 
     var platformIcons = root.findall('icon');
     var platformScreens = root.findall('splash');
-    manifestIcons.forEach(function (element) {
+    manifestImages.forEach(function (element) {
         if (!isValidFormat(element, validFormats)) {
           return;
         }
@@ -286,7 +286,7 @@ function processIconsBySize(platform, manifestIcons, splashScreenSizes, iconSize
     });
 }
 
-function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats) {
+function processImagesByDensity(platform, manifestImages, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats) {
     // get platform section and create it if it does not exist
     var root = config.doc.find('platform[@name=\'' + platform + '\']');
     if (!root) {
@@ -296,7 +296,7 @@ function processIconsByDensity(platform, manifestIcons, screenSizeToDensityMap, 
 
     var platformIcons = root.findall('icon');
     var platformScreens = root.findall('splash');
-    manifestIcons.forEach(function (element) {
+    manifestImages.forEach(function (element) {
         if (!isValidFormat(element, validFormats)) {
             return;
         }
@@ -455,7 +455,7 @@ function processDefaultIconsBySize(platform, screenSizes, iconSizes) {
     });
 }
 
-function processiOSIcons(manifestIcons) {
+function processiOSIcons(manifestIcons, manifestSplashScreens) {
     var iconSizes = [
         "40x40",
         "80x80",
@@ -487,11 +487,12 @@ function processiOSIcons(manifestIcons) {
         "1242x2208"
     ];
 
-    processIconsBySize('ios', manifestIcons, splashScreenSizes, iconSizes);
+    processImagesBySize('ios', manifestIcons, splashScreenSizes, iconSizes);
+    processImagesBySize('ios', manifestSplashScreens, splashScreenSizes, []);
     processDefaultIconsBySize('ios', splashScreenSizes, iconSizes);
 }
 
-function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent) {
+function processAndroidIcons(manifestIcons, manifestSplashScreens) {
     var iconSizeToDensityMap = {
         36: 'ldpi',
         48: 'mdpi',
@@ -540,11 +541,12 @@ function processAndroidIcons(manifestIcons, outputConfiguration, previousIndent)
       'image/png'
     ];
     
-    processIconsByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);   
+    processImagesByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);   
+    processImagesByDensity('android', manifestSplashScreens, screenSizeToDensityMap, [], dppxToDensityMap, validFormats);   
     processDefaultIconsByDensity('android', screenDensities, iconDensities);
 }
 
-function processWindowsIcons(manifestIcons) {
+function processWindowsIcons(manifestIcons, manifestSplashScreens) {
     var iconSizes = [
         "30x30",
         "44x44",
@@ -566,11 +568,12 @@ function processWindowsIcons(manifestIcons) {
         "1152x1920"
     ];
 
-    processIconsBySize('windows', manifestIcons, splashScreenSizes, iconSizes);
+    processImagesBySize('windows', manifestIcons, splashScreenSizes, iconSizes);
+    processImagesBySize('windows', manifestSplashScreens, splashScreenSizes, []);
     processDefaultIconsBySize('windows', splashScreenSizes, iconSizes);
 };
 
-function processWindowsPhoneIcons(manifestIcons) {
+function processWindowsPhoneIcons(manifestIcons, manifestSplashScreens) {
     var iconSizes = [
         "62x62",
         "173x173"
@@ -580,7 +583,8 @@ function processWindowsPhoneIcons(manifestIcons) {
         "480x800"
     ];
 
-    processIconsBySize('wp8', manifestIcons, splashScreenSizes, iconSizes);
+    processImagesBySize('wp8', manifestIcons, splashScreenSizes, iconSizes);
+    processImagesBySize('wp8', manifestSplashScreens, splashScreenSizes, []);
     processDefaultIconsBySize('wp8', splashScreenSizes, iconSizes);
 };
 
@@ -665,16 +669,19 @@ module.exports = function (context) {
         // configure access rules
         processAccessRules(manifest);
 
-        // Obtain and download the icons specified in the manidest
-        var manifestIcons = getManifestIcons(manifest);
+        // Obtain and download the icons and splash screens specified in the manifest.
+        // Currently, splash screens specified in the splash_screens section of the manifest 
+        // take precedence over similarly sized splash screens in the icons section.
+        var manifestIcons = processImageList(manifest.icons, manifest.start_url);
+        var manifestSplashScreens = processImageList(manifest.splash_screens, manifest.start_url);
 
         Q.allSettled(pendingTasks).then(function () {
             
           // Configure the icons once all icon files are downloaded
-          processiOSIcons(manifestIcons);
-          processAndroidIcons(manifestIcons);
-          processWindowsIcons(manifestIcons);
-          processWindowsPhoneIcons(manifestIcons);
+          processiOSIcons(manifestIcons, manifestSplashScreens);
+          processAndroidIcons(manifestIcons, manifestSplashScreens);
+          processWindowsIcons(manifestIcons, manifestSplashScreens);
+          processWindowsPhoneIcons(manifestIcons, manifestSplashScreens);
           
           // save the updated configuration
           config.write();

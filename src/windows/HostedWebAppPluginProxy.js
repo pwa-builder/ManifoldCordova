@@ -50,7 +50,7 @@ function navigationStartingEvent(evt) {
         if (!isInWhitelist) {
             evt.stopImmediatePropagation();
             evt.preventDefault();
-            console.log("Popping out URL: " + evt.uri);
+            console.log("Whitelist rejection: url='" + evt.uri + "'");
             Windows.System.Launcher.launchUriAsync(new Windows.Foundation.Uri(evt.uri));
         }
     }
