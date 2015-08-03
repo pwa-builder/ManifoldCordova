@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.content.res.AssetManager;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 * This class manipulates the Web App W3C manifest.
 */
 public class HostedWebApp extends CordovaPlugin {
+    private static final String LOG_TAG = "HostedWebApp";
     private static final String DEFAULT_MANIFEST_FILE = "manifest.json";
     private static final String OFFLINE_PAGE = "offline.html";
     private static final String OFFLINE_PAGE_TEMPLATE = "<html><body><div style=\"top:50%%;text-align:center;position:absolute\">%s</div></body></html>";
