@@ -337,11 +337,7 @@ function handleCordovaExecCalls(evt) {
                 };
             }
 
-            if (service === '__PluginLoaderProxy' && action === 'get') {
-                injectScripts(args[0], function (result) { success && success(result); }, function (err) { fail && fail(err); });
-            } else {
-                exec(success, fail, service, action, args);
-            }
+            exec(success, fail, service, action, args);
 
             return true;
         }
@@ -362,9 +358,7 @@ module.exports = {
                     try {
                         _manifest = JSON.parse(data);
                         cordova.fireDocumentEvent("manifestLoaded", { manifest: _manifest });
-                        if (successCallback) {
-                            successCallback(_manifest);
-                        }
+                        successCallback &&  successCallback(_manifest);
                     } catch (err) {
                         _manifestError = 'Error parsing manifest file: ' + manifestFileName + ' - ' + err.message;
                         console.log(_manifestError);
@@ -374,37 +368,37 @@ module.exports = {
             function (err) {
                 _manifestError = 'Error reading manifest file: ' + manifestFileName + ' - ' + err;
                 console.log(_manifestError);
-                if (errorCallback) {
-                    errorCallback(err);
-                }
+                errorCallback && errorCallback(err);
             });
     },
 
     // returns the currently loaded manifest
     getManifest: function (successCallback, errorCallback) {
         if (_manifest) {
-            if (successCallback) {
-                successCallback(_manifest);
-            }
+            successCallback && successCallback(_manifest);
         } else {
-            if (errorCallback) {
-                errorCallback(new Error(_manifestError));
-            }
+            errorCallback && errorCallback(new Error(_manifestError));
         }
     },
 
     // enables offline page support
-    enableOfflinePage: function () {
+    enableOfflinePage: function (successCallback, errorCallback) {
         _enableOfflineSupport = true;
+        successCallback && successCallback();
     },
 
     // disables offline page support
-    disableOfflinePage: function () {
+    disableOfflinePage: function (successCallback, errorCallback) {
         _enableOfflineSupport = false;
+        successCallback && successCallback();
     },
 
     getWebView: function () {
       return _mainView;
+    },
+
+    injectPluginScript: function (successCallback, errorCallback, file) {
+        injectScripts(file, successCallback, errorCallback);
     }
 }; // exports
 
