@@ -11,6 +11,10 @@
     @property (nonatomic,retain) id<UIWebViewDelegate> wrappedDelegate;
 @end
 
+@interface CDVHostedAppProtocol : NSURLProtocol {}
+
+@end
+
 @interface CDVHostedWebApp : CDVPlugin
 {
     CVDWebViewNotificationDelegate *notificationDelegate;

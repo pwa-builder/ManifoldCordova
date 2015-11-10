@@ -2,6 +2,14 @@
 #import <Cordova/CDV.h>
 #import "CDVConnection.h"
 
+static NSString* const DEFAULT_SCRIPT_SOURCE_CSP = nil;
+static NSString* const DEFAULT_LOCAL_ASSETS_VIRTUALPATH_PREFIX = @"cordova-hostedwebapp";
+static NSString* const DEFAULT_PLUGIN_MODE = @"client";
+static NSString* const DEFAULT_CORDOVA_BASE_URL = @"";
+
+NSString* scriptSourceCSP;
+NSString* localAssetsVirtualPathPrefix;
+
 @interface CDVHostedWebApp ()
 
 @property UIWebView *offlineView;
@@ -36,6 +44,51 @@
     [self.wrappedDelegate webView:webView didFailLoadWithError:error];
 
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidFailLoadWithError object:error]];
+}
+
+@end
+
+@implementation CDVHostedAppProtocol
+
++ (BOOL)canInitWithRequest:(NSURLRequest*)theRequest
+{
+    NSURL* requestUrl = [theRequest URL];
+    
+//    NSLog(@"Request for URL: %@", requestUrl);
+    NSString* prefix = [@"/" stringByAppendingString:localAssetsVirtualPathPrefix];
+    if ([[requestUrl path] hasPrefix:prefix] &&
+        (scriptSourceCSP == nil || scriptSourceCSP.length == 0 || [[requestUrl host] isEqualToString:scriptSourceCSP])) {
+        return YES;
+    }
+    
+    return NO;
+}
+
++ (NSURLRequest*)canonicalRequestForRequest:(NSURLRequest*)request
+{
+    return request;
+}
+
+- (void)startLoading
+{
+    NSString* path = [[[[self request] URL] path] substringFromIndex:localAssetsVirtualPathPrefix.length + 1];
+    
+    NSLog(@"Loading content from app package: %@", path);
+    
+    NSURLRequest *request = self.request;
+    NSDictionary *headers = @{ @"Content-Type": @"application/javascript" }; // this assumes all files are js
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:headers];
+    
+    NSData* content = [NSData dataWithContentsOfFile: [[NSBundle mainBundle] pathForResource: path ofType:nil]];
+    id <NSURLProtocolClient> client = self.client;
+    [client URLProtocol:self didReceiveResponse:response cacheStoragePolicy:NSURLCacheStorageAllowed];
+    [client URLProtocol:self didLoadData:content];
+    [client URLProtocolDidFinishLoading:self];
+}
+
+- (void)stopLoading
+{
+    // cleanup here
 }
 
 @end
@@ -90,6 +143,8 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     notificationDelegate = [[CVDWebViewNotificationDelegate alloc] init];
     notificationDelegate.wrappedDelegate = self.webView.delegate;
     [self.webView setDelegate:notificationDelegate];
+    
+    [NSURLProtocol registerClass:[CDVHostedAppProtocol class]];
 }
 
 // loads the specified W3C manifest
@@ -170,6 +225,18 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     if([parsedManifest isKindOfClass:[NSDictionary class]]) {
         [[NSNotificationCenter defaultCenter] postNotificationName:kManifestLoadedNotification object:parsedManifest];
 
+        NSObject* setting;
+        
+        setting = [parsedManifest objectForKey:@"mjs_script_source_csp"];
+        scriptSourceCSP = (setting != nil && [setting isKindOfClass:[NSString class]])
+            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+            : DEFAULT_SCRIPT_SOURCE_CSP;
+        
+        setting = [parsedManifest objectForKey:@"mjs_local_assets_virtualpath_prefix"];
+        localAssetsVirtualPathPrefix = (setting != nil && [setting isKindOfClass:[NSString class]])
+            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+            : DEFAULT_LOCAL_ASSETS_VIRTUALPATH_PREFIX;
+            
         return parsedManifest;
     }
 
@@ -255,6 +322,64 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         if (!self.failedURL) {
             [self.offlineView setHidden:YES];
         }
+        
+        NSString* scriptPathPrefix = [localAssetsVirtualPathPrefix stringByAppendingString:@"/www"];
+        if (scriptSourceCSP != nil && scriptSourceCSP.length > 0)
+        {
+            scriptPathPrefix = [NSString stringWithFormat:@"//%@/%@", scriptSourceCSP, scriptPathPrefix];
+        }
+        
+        NSString* javascript = @"(function() {function createScriptElement(source) {var element = document.createElement('script'); element.type = 'text/javascript'; element.src = source; document.head.appendChild(element);}";
+        
+        NSObject* setting = [self.manifest objectForKey:@"mjs_cordova"];
+        if (setting != nil && [setting isKindOfClass:[NSDictionary class]])
+        {
+            NSDictionary* cordova = (NSDictionary*) setting;
+            
+            setting = [cordova objectForKey:@"pluginMode"];
+            NSString* pluginMode = (setting != nil && [setting isKindOfClass:[NSString class]])
+            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+            : DEFAULT_PLUGIN_MODE;
+
+            setting = [cordova objectForKey:@"baseUrl"];
+            NSString* cordovaBaseUrl = (setting != nil && [setting isKindOfClass:[NSString class]])
+            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+            : DEFAULT_CORDOVA_BASE_URL;
+            if (![cordovaBaseUrl hasSuffix:@"/"])
+            {
+                cordovaBaseUrl = [cordovaBaseUrl stringByAppendingString:@"/"];
+            }
+            
+            javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"window.hostedWebApp = { 'platform': 'ios', 'pluginMode': '%@', 'cordovaBaseUrl': '%@'};", pluginMode, cordovaBaseUrl]];
+            
+            if ([pluginMode isEqualToString:@"client"])
+            {
+                javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"createScriptElement('%@/cordova.js');", scriptPathPrefix]];
+            }
+            
+            javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"createScriptElement('%@/hostedapp-bridge.js');", scriptPathPrefix]];
+        }
+        
+
+        setting = [self.manifest objectForKey:@"mjs_custom_scripts"];
+        if (setting != nil && [setting isKindOfClass:[NSArray class]])
+        {
+            NSArray* customScripts = (NSArray*) setting;
+            if (customScripts != nil && customScripts.count > 0)
+            {
+                for (NSDictionary* item in customScripts)
+                {
+                    NSString* source = [item valueForKey:@"source"];
+                    // NSString* target = [item valueForKey:@"target"];
+                    NSString* scriptPath = [NSString stringWithFormat:@"%@/%@", scriptPathPrefix, source];
+                    javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"createScriptElement('%@');", scriptPath]];
+                    NSLog(@"Injecting script from app package: %@", scriptPath);
+                }
+            }
+        }
+        
+        javascript = [javascript stringByAppendingString:@"})();"];
+        [self.webView stringByEvaluatingJavaScriptFromString:javascript];
     }
 }
 
