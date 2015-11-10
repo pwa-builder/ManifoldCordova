@@ -14,26 +14,3 @@ var hostedwebapp = {
 }
 
 module.exports = hostedwebapp;
-
-//var _deviceReady = false;
-//
-//function onDeviceReady() {
-//  if (_deviceReady) return;
-//  _deviceReady = true;
-//
-//  cordova.exec(function (data) {
-//    var manifestObject = JSON.parse(data);
-//
-//    // hostedwebapp.navigateToStartUrl();   // TODO: plugin should expose this method
-//    if (cordova.platformId === "windows" || cordova.platformId === "windows8") {
-//      webView.src = manifestObject.start_url;
-//    } else {
-//      window.location.href = manifestObject.start_url;
-//    }
-//  }, function (err) {
-//    console.log("Error loading Hosted Web App plugin: " + err);
-//  },
-//  "HostedWebApp", "getManifest", []);
-//}
-//
-//document.addEventListener("deviceready", onDeviceReady, false);
