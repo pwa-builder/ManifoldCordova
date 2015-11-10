@@ -9,23 +9,12 @@ var _lastKnownLocationFailed = false;
 var _whiteList = [];
 
 function bridgeNativeEvent(e) {
-    _mainView.invokeScriptAsync('eval', "cordova.fireDocumentEvent('" + e.type + "', null, true);").start();
+    _mainView.invokeScriptAsync('eval', "cordova && cordova.fireDocumentEvent('" + e.type + "', null, true);").start();
 }
 
 //document.addEventListener('backbutton', bridgeNativeEvent, false);
-//document.addEventListener('pause', bridgeNativeEvent, false);
+document.addEventListener('pause', bridgeNativeEvent, false);
 document.addEventListener('resume', bridgeNativeEvent, false);
-
-WinJS.Application.addEventListener("checkpoint", function (args) {
-    var promise = new WinJS.Promise(function (complete, error) {
-        var asyncOp = _mainView.invokeScriptAsync('eval', "(function () {cordova.fireDocumentEvent('pause', null, true);})();");
-        asyncOp.oncomplete = function (evt) { complete(); };
-        asyncOp.onerror = function (err) { error(err); };
-        asyncOp.start();
-    });
-
-    args.setPromise(promise);
-});
 
 // creates a webview to host content
 function configureHost(url, zOrder, display) {
