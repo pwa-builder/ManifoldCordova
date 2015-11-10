@@ -11,10 +11,6 @@
     @property (nonatomic,retain) id<UIWebViewDelegate> wrappedDelegate;
 @end
 
-@interface CDVHostedAppProtocol : NSURLProtocol {}
-
-@end
-
 @interface CDVHostedWebApp : CDVPlugin
 {
     CVDWebViewNotificationDelegate *notificationDelegate;
@@ -30,5 +26,7 @@
 -(void) enableOfflinePage:(CDVInvokedUrlCommand*)command;
 
 -(void) disableOfflinePage:(CDVInvokedUrlCommand*)command;
+
+-(void) injectPluginScript:(CDVInvokedUrlCommand *)command;
 
 @end

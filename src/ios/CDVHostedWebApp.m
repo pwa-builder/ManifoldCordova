@@ -2,13 +2,8 @@
 #import <Cordova/CDV.h>
 #import "CDVConnection.h"
 
-static NSString* const DEFAULT_SCRIPT_SOURCE_CSP = nil;
-static NSString* const DEFAULT_LOCAL_ASSETS_VIRTUALPATH_PREFIX = @"cordova-hostedwebapp";
 static NSString* const DEFAULT_PLUGIN_MODE = @"client";
 static NSString* const DEFAULT_CORDOVA_BASE_URL = @"";
-
-NSString* scriptSourceCSP;
-NSString* localAssetsVirtualPathPrefix;
 
 @interface CDVHostedWebApp ()
 
@@ -44,51 +39,6 @@ NSString* localAssetsVirtualPathPrefix;
     [self.wrappedDelegate webView:webView didFailLoadWithError:error];
 
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidFailLoadWithError object:error]];
-}
-
-@end
-
-@implementation CDVHostedAppProtocol
-
-+ (BOOL)canInitWithRequest:(NSURLRequest*)theRequest
-{
-    NSURL* requestUrl = [theRequest URL];
-    
-//    NSLog(@"Request for URL: %@", requestUrl);
-    NSString* prefix = [@"/" stringByAppendingString:localAssetsVirtualPathPrefix];
-    if ([[requestUrl path] hasPrefix:prefix] &&
-        (scriptSourceCSP == nil || scriptSourceCSP.length == 0 || [[requestUrl host] isEqualToString:scriptSourceCSP])) {
-        return YES;
-    }
-    
-    return NO;
-}
-
-+ (NSURLRequest*)canonicalRequestForRequest:(NSURLRequest*)request
-{
-    return request;
-}
-
-- (void)startLoading
-{
-    NSString* path = [[[[self request] URL] path] substringFromIndex:localAssetsVirtualPathPrefix.length + 1];
-    
-    NSLog(@"Loading content from app package: %@", path);
-    
-    NSURLRequest *request = self.request;
-    NSDictionary *headers = @{ @"Content-Type": @"application/javascript" }; // this assumes all files are js
-    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:headers];
-    
-    NSData* content = [NSData dataWithContentsOfFile: [[NSBundle mainBundle] pathForResource: path ofType:nil]];
-    id <NSURLProtocolClient> client = self.client;
-    [client URLProtocol:self didReceiveResponse:response cacheStoragePolicy:NSURLCacheStorageAllowed];
-    [client URLProtocol:self didLoadData:content];
-    [client URLProtocolDidFinishLoading:self];
-}
-
-- (void)stopLoading
-{
-    // cleanup here
 }
 
 @end
@@ -143,8 +93,6 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     notificationDelegate = [[CVDWebViewNotificationDelegate alloc] init];
     notificationDelegate.wrappedDelegate = self.webView.delegate;
     [self.webView setDelegate:notificationDelegate];
-    
-    [NSURLProtocol registerClass:[CDVHostedAppProtocol class]];
 }
 
 // loads the specified W3C manifest
@@ -192,6 +140,25 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
+-(void) injectPluginScript:(CDVInvokedUrlCommand *)command {
+    
+    NSString* scriptPath = [NSString stringWithFormat:@"www/%@", [command.arguments objectAtIndex:0]];
+    NSError *error = nil;
+    NSString* content = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
+    if (error == nil) {
+        [self.webView stringByEvaluatingJavaScriptFromString:content];
+    }
+    
+    CDVPluginResult* pluginResult = nil;
+    if (self.manifest != nil) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:self.manifest];
+    } else {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:self.manifestError];
+    }
+    
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 // loads a manifest file and parses it
 -(NSDictionary *) loadManifestFile:(NSString *)manifestFileName {
 
@@ -223,26 +190,29 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     }
 
     if([parsedManifest isKindOfClass:[NSDictionary class]]) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:kManifestLoadedNotification object:parsedManifest];
-
-        NSObject* setting;
-        
-        setting = [parsedManifest objectForKey:@"mjs_script_source_csp"];
-        scriptSourceCSP = (setting != nil && [setting isKindOfClass:[NSString class]])
-            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-            : DEFAULT_SCRIPT_SOURCE_CSP;
-        
-        setting = [parsedManifest objectForKey:@"mjs_local_assets_virtualpath_prefix"];
-        localAssetsVirtualPathPrefix = (setting != nil && [setting isKindOfClass:[NSString class]])
-            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-            : DEFAULT_LOCAL_ASSETS_VIRTUALPATH_PREFIX;
-            
+        [[NSNotificationCenter defaultCenter] postNotificationName:kManifestLoadedNotification object:parsedManifest];        
         return parsedManifest;
     }
 
     /* deserialization is not a dictionary--it probably means an invalid manifest. */
     self.manifestError = [NSString stringWithFormat:@"Invalid or unexpected manifest format: %@", manifestFileName];
     return nil;
+}
+
+-(void) injectScripts:(NSArray *)scriptList {
+    
+    NSString* content = @"";
+    for (NSString* scriptName in scriptList)
+    {
+        NSString* scriptPath = [NSString stringWithFormat:@"www/%@", scriptName];
+        NSError *error = nil;
+        NSString* fileContents = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
+        if (error == nil) {
+            content = [content stringByAppendingString:fileContents];
+        }
+    }
+    
+    [self.webView stringByEvaluatingJavaScriptFromString:content];
 }
 
 // Creates an additional webview to load the offline page, places it above the content webview, and hides it. It will
@@ -323,14 +293,6 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             [self.offlineView setHidden:YES];
         }
         
-        NSString* scriptPathPrefix = [localAssetsVirtualPathPrefix stringByAppendingString:@"/www"];
-        if (scriptSourceCSP != nil && scriptSourceCSP.length > 0)
-        {
-            scriptPathPrefix = [NSString stringWithFormat:@"//%@/%@", scriptSourceCSP, scriptPathPrefix];
-        }
-        
-        NSString* javascript = @"(function() {function createScriptElement(source) {var element = document.createElement('script'); element.type = 'text/javascript'; element.src = source; document.head.appendChild(element);}";
-        
         NSObject* setting = [self.manifest objectForKey:@"mjs_cordova"];
         if (setting != nil && [setting isKindOfClass:[NSDictionary class]])
         {
@@ -350,17 +312,20 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                 cordovaBaseUrl = [cordovaBaseUrl stringByAppendingString:@"/"];
             }
             
-            javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"window.hostedWebApp = { 'platform': 'ios', 'pluginMode': '%@', 'cordovaBaseUrl': '%@'};", pluginMode, cordovaBaseUrl]];
+            NSString* javascript = [NSString stringWithFormat:@"window.hostedWebApp = { 'platform': 'ios', 'pluginMode': '%@', 'cordovaBaseUrl': '%@'};", pluginMode, cordovaBaseUrl];
+            [self.webView stringByEvaluatingJavaScriptFromString:javascript];
             
+            NSMutableArray* scripts = [[NSMutableArray alloc] init];
             if ([pluginMode isEqualToString:@"client"])
             {
-                javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"createScriptElement('%@/cordova.js');", scriptPathPrefix]];
+                [scripts addObject: @"cordova.js"];
             }
             
-            javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"createScriptElement('%@/hostedapp-bridge.js');", scriptPathPrefix]];
+            [scripts addObject: @"hostedapp-bridge.js"];
+            [self injectScripts: scripts];
         }
         
-
+        NSMutableArray* allScripts = [[NSMutableArray alloc] init];
         setting = [self.manifest objectForKey:@"mjs_custom_scripts"];
         if (setting != nil && [setting isKindOfClass:[NSArray class]])
         {
@@ -370,16 +335,13 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                 for (NSDictionary* item in customScripts)
                 {
                     NSString* source = [item valueForKey:@"source"];
-                    // NSString* target = [item valueForKey:@"target"];
-                    NSString* scriptPath = [NSString stringWithFormat:@"%@/%@", scriptPathPrefix, source];
-                    javascript = [javascript stringByAppendingString:[NSString stringWithFormat:@"createScriptElement('%@');", scriptPath]];
-                    NSLog(@"Injecting script from app package: %@", scriptPath);
+                    // NSString* target = [item valueForKey:@"match"];
+                    [allScripts addObject:source];
                 }
+                
+                [self injectScripts: allScripts];
             }
         }
-        
-        javascript = [javascript stringByAppendingString:@"})();"];
-        [self.webView stringByEvaluatingJavaScriptFromString:javascript];
     }
 }
 

@@ -78,8 +78,8 @@
                     }
                 }
 
-                // In client mode for Windows platform, call native side to load and inject the script from the app package
-                if (pluginMode === 'client' && platform === 'windows') {
+                // In client mode, call native side to load and inject the script from the app package
+                if (pluginMode === 'client') {
                     return cordova.require('cordova/exec')(function (result) {
 
                         // native side did not handle the script--using default mechanism
@@ -92,7 +92,7 @@
                     function (err) {
                         onerrorHandler(err);
                     },
-                    '__PluginLoaderProxy', 'get', [url]);
+                    'HostedWebApp', 'injectPluginScript', [url]);
                 }
 
                 if (pluginMode === 'server') {
