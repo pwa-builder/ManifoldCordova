@@ -79,7 +79,7 @@
                 }
 
                 // In client mode, call native side to load and inject the script from the app package
-                if (pluginMode === 'client') {
+                if (pluginMode === 'client' && (platform === 'windows' || platform === 'ios')) {
                     return cordova.require('cordova/exec')(function (result) {
 
                         // native side did not handle the script--using default mechanism
