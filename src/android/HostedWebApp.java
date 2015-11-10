@@ -3,8 +3,6 @@ package com.manifoldjs.hostedwebapp;
 import android.content.Intent;
 import android.net.Uri;
 import android.content.res.AssetManager;
-import android.os.Build;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,18 +14,13 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaPlugin;
 
-import org.apache.cordova.CordovaResourceApi;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,11 +33,6 @@ public class HostedWebApp extends CordovaPlugin {
     private static final String DEFAULT_MANIFEST_FILE = "manifest.json";
     private static final String OFFLINE_PAGE = "offline.html";
     private static final String OFFLINE_PAGE_TEMPLATE = "<html><body><div style=\"top:50%%;text-align:center;position:absolute\">%s</div></body></html>";
-    private static final String DEFAULT_SCRIPT_SOURCE_CSP = null;
-    private static final String DEFAULT_LOCAL_ASSETS_VIRTUALPATH_PREFIX = "cordova-hostedwebapp";
-
-    private String scriptSourceCSP;
-    private String localAssetsVirtualPathPrefix;
 
     private boolean loadingManifest;
     private JSONObject manifestObject;
@@ -57,8 +45,6 @@ public class HostedWebApp extends CordovaPlugin {
     private boolean offlineOverlayEnabled;
 
     private boolean isConnectionError = false;
-
-    private List<String> pluginAssets = null;
 
     @Override
     public void pluginInitialize() {
@@ -152,8 +138,8 @@ public class HostedWebApp extends CordovaPlugin {
                 callbackContext.sendPluginResult(pluginResult);
             }
 
-        return true;
-    }
+            return true;
+        }
 
         if (action.equals("enableOfflinePage")) {
             this.offlineOverlayEnabled = true;
@@ -164,6 +150,25 @@ public class HostedWebApp extends CordovaPlugin {
             this.offlineOverlayEnabled = false;
             return true;
         }
+
+		if (action.equals("injectPluginScript")) {
+			final List<String> scripts = new ArrayList<String>();
+			scripts.add(args.getString(0));
+
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        injectScripts(scripts);
+                        callbackContext.success(1);
+                    } catch (IOException e) {
+                        callbackContext.error("Failed to inject script.");
+                    }
+                }
+            });
+
+            return true;
+		}
 
         return false;
     }
@@ -196,7 +201,7 @@ public class HostedWebApp extends CordovaPlugin {
                 this.hideOfflineOverlay();
             }
 
-            this.injectScripts();
+            this.injectCordovaScripts();
         }
 
         return null;
@@ -204,11 +209,6 @@ public class HostedWebApp extends CordovaPlugin {
 
     @Override
     public Boolean shouldAllowRequest(String url) {
-        Uri requestUri = Uri.parse(url);
-        if (requestUri.getPath().startsWith(this.localAssetsVirtualPathPrefix, 1) && (this.scriptSourceCSP == null || this.scriptSourceCSP.isEmpty() || requestUri.getHost().equals(this.scriptSourceCSP))) {
-            return true;
-        }
-
         CordovaPlugin whiteListPlugin = this.getWhitelistPlugin();
 
         if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowRequest(url))
@@ -256,90 +256,33 @@ public class HostedWebApp extends CordovaPlugin {
         return this.manifestObject;
     }
 
-    public Uri remapUri(Uri uri) {
-        List<String> segments = uri.getPathSegments();
-
-        if (uri.getPath().startsWith(this.localAssetsVirtualPathPrefix, 1) && (this.scriptSourceCSP == null || this.scriptSourceCSP.isEmpty() || uri.getHost().equals(this.scriptSourceCSP))) {
-            return toPluginUri(uri);
-        }
-
-        return null;
-    }
-
-    public CordovaResourceApi.OpenForReadResult handleOpenForRead(Uri uri) throws IOException {
-        Uri originalUri = fromPluginUri(uri);
-        String path = originalUri.getPath().substring(this.localAssetsVirtualPathPrefix.length() + 2);
-        InputStream is = this.activity.getAssets().open(path);
-        int available = is.available();
-
-        return new CordovaResourceApi.OpenForReadResult(originalUri, is, "application/javascript", available, null);
-    }
-
-    public String readStringFromAssets(String path) {
-        InputStream ins = null;
-
-        try {
-            ins = this.activity.getAssets().open(path);
-
-            int size = ins.available();
-            byte[] buffer = new byte[size];
-            ins.read(buffer);
-            ins.close();
-            ins = null;
-
-            int offset = 0;
-            byte[] BOM = new byte[] { (byte)239, (byte)187, (byte)191 };
-            if (buffer.length >= 3 && buffer[0] == BOM[0] && buffer[1] == BOM[1] && buffer[2] == BOM[2]) {
-                offset = 3;
-            }
-
-            return Base64.encodeToString(buffer, offset, size - offset, Base64.NO_WRAP);
-        } catch (IOException ioe) {
-            return null;
-        } finally {
-            if (ins != null) {
-                try {
-                    ins.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private void injectScripts() {
-        String scriptPathPrefix = this.localAssetsVirtualPathPrefix + "/www";
-        if (this.scriptSourceCSP != null && !this.scriptSourceCSP.isEmpty()) {
-            scriptPathPrefix = "//" + this.scriptSourceCSP + "/" + scriptPathPrefix;
-        }
-
-        String script = "(function() {"
-                + "function createScriptElement(source) {"
-                + "var element = document.createElement('script');"
-                + "element.type = 'text/javascript';"
-                + "element.src = source;"
-                + "document.head.appendChild(element)}";
-
+    private void injectCordovaScripts() {
         JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
 
         // Inject cordova scripts if configured
-        if (cordovaSettings != null) {
-            String pluginMode = cordovaSettings.optString("pluginMode", "client");
+        try {
+            if (cordovaSettings != null) {
+                String pluginMode = cordovaSettings.optString("pluginMode", "client");
 
-            if (!pluginMode.equals("none")) {
-                String cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
-                if (!cordovaBaseUrl.endsWith("/")) {
-                    cordovaBaseUrl += "/";
+                if (!pluginMode.equals("none")) {
+                    String cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
+                    if (!cordovaBaseUrl.endsWith("/")) {
+                        cordovaBaseUrl += "/";
+                    }
+
+                    this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
+
+                    List<String> scriptList = new ArrayList<String>();
+                    if (pluginMode.equals("client")) {
+                        scriptList.add("cordova.js");
+                    }
+
+                    scriptList.add("hostedapp-bridge.js");
+                    injectScripts(scriptList);
                 }
-
-                this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
-
-                if (pluginMode.equals("client")) {
-                    script += "createScriptElement('" + scriptPathPrefix + "/cordova.js');";
-                }
-
-                script += "createScriptElement('" + scriptPathPrefix + "/hostedapp-bridge.js');";
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         // Inject custom scripts
@@ -347,31 +290,28 @@ public class HostedWebApp extends CordovaPlugin {
             JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
 
             if (customScripts != null && customScripts.length() > 0) {
+				List<String> scriptList = new ArrayList<String>();
                 for (int i = 0; i < customScripts.length(); i++) {
                     JSONObject item = customScripts.optJSONObject(i);
                     if (item != null) {
                         String source = item.getString("source");
                         if (source != null) {
-                            String scriptPath = scriptPathPrefix + "/" + source;
-                            script += "createScriptElement('" + scriptPath + "');";
+							scriptList.add(source);
                         }
                     }
                 }
+
+				injectScripts(scriptList);
             }
         }
         catch(JSONException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        script += "})();";
-
-        this.webView.getEngine().loadUrl("javascript:" + script, false);
     }
 
     private void onManifestLoaded() {
-        this.scriptSourceCSP = this.manifestObject.optString("mjs_script_source_csp", DEFAULT_SCRIPT_SOURCE_CSP);
-        this.localAssetsVirtualPathPrefix = this.manifestObject.optString("mjs_local_assets_virtualpath_prefix", DEFAULT_LOCAL_ASSETS_VIRTUALPATH_PREFIX);
-
         this.webView.postMessage("hostedWebApp_manifestLoaded", this.manifestObject);
     }
 
@@ -480,5 +420,22 @@ public class HostedWebApp extends CordovaPlugin {
         }
 
         return null;
+    }
+
+	private void injectScripts(List<String> files) throws IOException {
+        String script = "";
+        for( int i = 0; i < files.size(); i++) {
+            String fileName = files.get(i);
+            Log.w(LOG_TAG, String.format("Injecting script: '%s'", fileName));
+            InputStream inputStream = this.activity.getResources().getAssets().open("www/" + fileName);
+            int size = inputStream.available();
+            byte[] bytes = new byte[size];
+            inputStream.read(bytes);
+            inputStream.close();
+            String content = new String(bytes, "UTF-8");
+            script += "\r\n/****** " + fileName + " *****/\r\n" + content;
+        }
+
+        this.webView.getEngine().loadUrl("javascript:" + Uri.encode(script), false);
     }
 }
