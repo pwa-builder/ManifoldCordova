@@ -142,20 +142,9 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
 -(void) injectPluginScript:(CDVInvokedUrlCommand *)command {
     
-    NSString* scriptPath = [NSString stringWithFormat:@"www/%@", [command.arguments objectAtIndex:0]];
-    NSError *error = nil;
-    NSString* content = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
-    if (error == nil) {
-        [self.webView stringByEvaluatingJavaScriptFromString:content];
-    }
-    
-    CDVPluginResult* pluginResult = nil;
-    if (self.manifest != nil) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:self.manifest];
-    } else {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:self.manifestError];
-    }
-    
+    NSArray* scriptList = @[[command.arguments objectAtIndex:0]];
+    BOOL result = [self injectScripts: scriptList];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:result];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
@@ -199,7 +188,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     return nil;
 }
 
--(void) injectScripts:(NSArray *)scriptList {
+-(BOOL) injectScripts:(NSArray *)scriptList {
     
     NSString* content = @"";
     for (NSString* scriptName in scriptList)
@@ -210,9 +199,12 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         if (error == nil) {
             content = [content stringByAppendingString:fileContents];
         }
+        else {
+            NSLog(@"ERROR failed to load script file: '%@'", scriptName);
+        }
     }
     
-    [self.webView stringByEvaluatingJavaScriptFromString:content];
+    return[self.webView stringByEvaluatingJavaScriptFromString:content] != nil;
 }
 
 // Creates an additional webview to load the offline page, places it above the content webview, and hides it. It will
