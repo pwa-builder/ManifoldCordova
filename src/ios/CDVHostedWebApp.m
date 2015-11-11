@@ -197,7 +197,8 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         NSError *error = nil;
         NSString* fileContents = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
         if (error == nil) {
-            content = [content stringByAppendingString:fileContents];
+            // prefix with @ sourceURL=<scriptName> comment to make the injected scripts visible in Safari's Web Inspector for debugging purposes
+            content = [content stringByAppendingFormat:@"\r\n//@ sourceURL=%@\r\n%@", scriptName, fileContents];
         }
         else {
             NSLog(@"ERROR failed to load script file: '%@'", scriptName);
