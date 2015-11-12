@@ -2,6 +2,7 @@
 #import <Cordova/CDV.h>
 #import "CDVConnection.h"
 
+static NSString* const IOS_PLATFORM = @"ios";
 static NSString* const DEFAULT_PLUGIN_MODE = @"client";
 static NSString* const DEFAULT_CORDOVA_BASE_URL = @"";
 
@@ -286,6 +287,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             [self.offlineView setHidden:YES];
         }
         
+        // inject Cordova
         NSObject* setting = [self.manifest objectForKey:@"mjs_cordova"];
         if (setting != nil && [setting isKindOfClass:[NSDictionary class]])
         {
@@ -305,7 +307,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                 cordovaBaseUrl = [cordovaBaseUrl stringByAppendingString:@"/"];
             }
             
-            NSString* javascript = [NSString stringWithFormat:@"window.hostedWebApp = { 'platform': 'ios', 'pluginMode': '%@', 'cordovaBaseUrl': '%@'};", pluginMode, cordovaBaseUrl];
+            NSString* javascript = [NSString stringWithFormat:@"window.hostedWebApp = { 'platform': '%@', 'pluginMode': '%@', 'cordovaBaseUrl': '%@'};", IOS_PLATFORM, pluginMode, cordovaBaseUrl];
             [self.webView stringByEvaluatingJavaScriptFromString:javascript];
             
             NSMutableArray* scripts = [[NSMutableArray alloc] init];
@@ -318,6 +320,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             [self injectScripts: scripts];
         }
         
+        // inject custom scripts
         NSMutableArray* allScripts = [[NSMutableArray alloc] init];
         setting = [self.manifest objectForKey:@"mjs_custom_scripts"];
         if (setting != nil && [setting isKindOfClass:[NSArray class]])
@@ -327,9 +330,41 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             {
                 for (NSDictionary* item in customScripts)
                 {
-                    NSString* source = [item valueForKey:@"source"];
-                    // NSString* target = [item valueForKey:@"match"];
-                    [allScripts addObject:source];
+                    // ensure script applies to current page
+                    BOOL isURLMatch = YES;
+                    setting = [item objectForKey:@"match"];
+                    if (setting != nil && [setting isKindOfClass:[NSArray class]])
+                    {
+                        NSArray* match = (NSArray*) setting;
+                        if (match != nil)
+                        {
+                            CDVWhitelist *whitelist = [[CDVWhitelist alloc] initWithArray:match];
+                            NSURL* url = self.webView.request.URL;
+                            isURLMatch = [whitelist URLIsAllowed:url];
+                        }
+                    }
+                    
+                    // ensure script applies to current platform
+                    BOOL isPlatformMatch = YES;
+                    NSString* platform = [item valueForKey:@"platform"];
+                    if (platform != nil)
+                    {
+                        isPlatformMatch = NO;
+                        for (id item in [platform componentsSeparatedByString:@";"])
+                        {
+                            if ([[item stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] caseInsensitiveCompare:IOS_PLATFORM] == NSOrderedSame)
+                            {
+                                isPlatformMatch = YES;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isPlatformMatch && isURLMatch)
+                    {
+                        NSString* source = [item valueForKey:@"source"];
+                        [allScripts addObject:source];
+                    }
                 }
                 
                 [self injectScripts: allScripts];
