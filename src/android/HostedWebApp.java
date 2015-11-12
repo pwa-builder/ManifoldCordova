@@ -470,7 +470,7 @@ public class HostedWebApp extends CordovaPlugin {
             inputStream.read(bytes);
             inputStream.close();
             String content = new String(bytes, "UTF-8");
-            script += "\r\n/****** " + fileName + " *****/\r\n" + content;
+            script += "\r\n//# sourceURL=" + fileName + "\r\n" + content;
         }
 
         this.webView.getEngine().loadUrl("javascript:" + Uri.encode(script), false);
