@@ -159,12 +159,8 @@ public class HostedWebApp extends CordovaPlugin {
             cordova.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        injectScripts(scripts);
-                        callbackContext.success(1);
-                    } catch (IOException e) {
-                        callbackContext.error("Failed to inject script.");
-                    }
+                    boolean result = injectScripts(scripts);
+                    callbackContext.success(result ? 1 : 0);
                 }
             });
 
@@ -198,6 +194,8 @@ public class HostedWebApp extends CordovaPlugin {
             }
         }
         else if (id.equals("onPageFinished")) {
+            Log.v(LOG_TAG, String.format("Finished loading URL '%s'", this.webView.getUrl()));
+
             if (!this.isConnectionError) {
                 this.hideOfflineOverlay();
             }
@@ -212,9 +210,7 @@ public class HostedWebApp extends CordovaPlugin {
     public Boolean shouldAllowRequest(String url) {
         CordovaPlugin whiteListPlugin = this.getWhitelistPlugin();
 
-        if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowRequest(url))
-
-        {
+        if (whiteListPlugin != null && Boolean.TRUE != whiteListPlugin.shouldAllowRequest(url)) {
             Log.w(LOG_TAG, String.format("Whitelist rejection: url='%s'", url));
         }
 
@@ -261,87 +257,79 @@ public class HostedWebApp extends CordovaPlugin {
         JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
 
         // Inject cordova scripts if configured
-        try {
-            if (cordovaSettings != null) {
-                String pluginMode = cordovaSettings.optString("pluginMode", "client");
+        if (cordovaSettings != null) {
+            String pluginMode = cordovaSettings.optString("pluginMode", "client");
 
-                if (!pluginMode.equals("none")) {
-                    String cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
-                    if (!cordovaBaseUrl.endsWith("/")) {
-                        cordovaBaseUrl += "/";
-                    }
-
-                    this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
-
-                    List<String> scriptList = new ArrayList<String>();
-                    if (pluginMode.equals("client")) {
-                        scriptList.add("cordova.js");
-                    }
-
-                    scriptList.add("hostedapp-bridge.js");
-                    injectScripts(scriptList);
+            if (!pluginMode.equals("none")) {
+                String cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
+                if (!cordovaBaseUrl.endsWith("/")) {
+                    cordovaBaseUrl += "/";
                 }
+
+                this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
+
+                List<String> scriptList = new ArrayList<String>();
+                if (pluginMode.equals("client")) {
+                    scriptList.add("cordova.js");
+                }
+
+                scriptList.add("hostedapp-bridge.js");
+                injectScripts(scriptList);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         // Inject custom scripts
-        try {
-            JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
+        JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
 
-            if (customScripts != null && customScripts.length() > 0) {
-                for (int i = 0; i < customScripts.length(); i++) {
-                    JSONObject item = customScripts.optJSONObject(i);
-                    if (item != null) {
-                        String source = item.optString("source", "");
-                        if (!source.trim().isEmpty()) {
+        if (customScripts != null && customScripts.length() > 0) {
+            String pageUrl = this.webView.getUrl();
 
-                            // ensure script applies to current platform
-                            String platform = item.optString("platform", "");
-                            if (!platform.trim().isEmpty()) {
-                                boolean found = false;
-                                String[] platforms = platform.split(";");
-                                for (String p : platforms) {
-                                    found = found || p.trim().equals("android");
-                                }
+            for (int i = 0; i < customScripts.length(); i++) {
+                JSONObject item = customScripts.optJSONObject(i);
+                if (item != null) {
+                    String source = item.optString("source", "");
+                    if (!source.trim().isEmpty()) {
 
-                                if (!found) {
-                                    continue;
-                                }
+                        // ensure script applies to current page
+                        boolean isURLMatch = true;
+                        JSONArray match = item.optJSONArray("match");
+                        if (match == null) {
+                            match = new JSONArray();
+                            String matchString = item.optString("match", "");
+                            if (!matchString.trim().isEmpty()) {
+                                match.put(matchString);
+                            }
+                        }
+
+                        if (match.length() > 0) {
+                            Whitelist whitelist = new Whitelist();
+                            for (int j = 0; j < match.length(); j++) {
+                                whitelist.addWhiteListEntry(match.optString(j), false);
                             }
 
-                            // ensure script applies to current page
-                            Whitelist matchRules = null;
-                            JSONArray matchPatterns = item.optJSONArray("match");
-                            if (matchPatterns == null) {
-                                matchPatterns = new JSONArray();
-                                String matchPattern = item.optString("match", "");
-                                if (!matchPattern.trim().isEmpty()) {
-                                    matchPatterns.put(matchPattern);
+                            isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
+                        }
+
+                        // ensure script applies to current platform
+                        boolean isPlatformMatch = true;
+                        String platform = item.optString("platform", "");
+                        if (!platform.trim().isEmpty()) {
+                            isPlatformMatch = false;
+                            String[] platforms = platform.split(";");
+                            for (String p : platforms) {
+                                if (p.trim().equalsIgnoreCase("android")) {
+                                    isPlatformMatch = true;
+                                    break;
                                 }
                             }
+                        }
 
-                            for (int j = 0; j < matchPatterns.length(); j++) {
-                                String matchPattern = matchPatterns.optString(j, "");
-                                if (!matchPattern.trim().isEmpty()) {
-                                    matchRules = (matchRules == null) ? new Whitelist() : matchRules;
-                                    matchRules.addWhiteListEntry(matchPattern, false);
-                                }
-                            }
-
-                            if (matchRules != null && !matchRules.isUrlWhiteListed(this.webView.getUrl())) {
-                                continue;
-                            }
-
-							injectScripts(Arrays.asList(new String[] { source }));
+                        if (isURLMatch && isPlatformMatch) {
+                            injectScripts(Arrays.asList(new String[] { source }));
                         }
                     }
                 }
             }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -456,20 +444,27 @@ public class HostedWebApp extends CordovaPlugin {
         return null;
     }
 
-	private void injectScripts(List<String> files) throws IOException {
+	private boolean injectScripts(List<String> files) {
         String script = "";
         for( int i = 0; i < files.size(); i++) {
             String fileName = files.get(i);
             Log.w(LOG_TAG, String.format("Injecting script: '%s'", fileName));
-            InputStream inputStream = this.activity.getResources().getAssets().open("www/" + fileName);
-            int size = inputStream.available();
-            byte[] bytes = new byte[size];
-            inputStream.read(bytes);
-            inputStream.close();
-            String content = new String(bytes, "UTF-8");
-            script += "\r\n//# sourceURL=" + fileName + "\r\n" + content;
+            try {
+                InputStream inputStream = this.activity.getResources().getAssets().open("www/" + fileName);
+                int size = inputStream.available();
+                byte[] bytes = new byte[size];
+                inputStream.read(bytes);
+                inputStream.close();
+                String content = new String(bytes, "UTF-8");
+                script += "\r\n//# sourceURL=" + fileName + "\r\n" + content;
+            } catch(IOException e) {
+                Log.v(LOG_TAG, String.format("ERROR: failed to load script file: '%s'", fileName));
+                e.printStackTrace();
+            }
         }
 
         this.webView.getEngine().loadUrl("javascript:" + Uri.encode(script), false);
+
+        return true;
     }
 }
