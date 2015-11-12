@@ -295,12 +295,12 @@ public class HostedWebApp extends CordovaPlugin {
                 for (int i = 0; i < customScripts.length(); i++) {
                     JSONObject item = customScripts.optJSONObject(i);
                     if (item != null) {
-                        String source = item.getString("source");
-                        if (source != null) {
+                        String source = item.optString("source", "");
+                        if (!source.trim().isEmpty()) {
 
                             // ensure script applies to current platform
-                            String platform = item.optString("platform");
-                            if (platform != null) {
+                            String platform = item.optString("platform", "");
+                            if (!platform.trim().isEmpty()) {
                                 boolean found = false;
                                 String[] platforms = platform.split(";");
                                 for (String p : platforms) {
@@ -317,15 +317,15 @@ public class HostedWebApp extends CordovaPlugin {
                             JSONArray matchPatterns = item.optJSONArray("match");
                             if (matchPatterns == null) {
                                 matchPatterns = new JSONArray();
-                                String matchPattern = item.optString("match");
-                                if (matchPattern != null) {
+                                String matchPattern = item.optString("match", "");
+                                if (!matchPattern.trim().isEmpty()) {
                                     matchPatterns.put(matchPattern);
                                 }
                             }
 
                             for (int j = 0; j < matchPatterns.length(); j++) {
-                                String matchPattern = matchPatterns.optString(j);
-                                if (matchPattern != null) {
+                                String matchPattern = matchPatterns.optString(j, "");
+                                if (!matchPattern.trim().isEmpty()) {
                                     matchRules = (matchRules == null) ? new Whitelist() : matchRules;
                                     matchRules.addWhiteListEntry(matchPattern, false);
                                 }
@@ -343,9 +343,7 @@ public class HostedWebApp extends CordovaPlugin {
 				injectScripts(scriptList);
             }
         }
-        catch(JSONException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
