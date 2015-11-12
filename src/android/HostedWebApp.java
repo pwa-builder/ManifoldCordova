@@ -15,6 +15,7 @@ import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaPlugin;
 
 import org.apache.cordova.PluginResult;
+import org.apache.cordova.Whitelist;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -296,7 +297,45 @@ public class HostedWebApp extends CordovaPlugin {
                     if (item != null) {
                         String source = item.getString("source");
                         if (source != null) {
-							scriptList.add(source);
+
+                            // ensure script applies to current platform
+                            String platform = item.optString("platform");
+                            if (platform != null) {
+                                boolean found = false;
+                                String[] platforms = platform.split(";");
+                                for (String p : platforms) {
+                                    found = found || p.trim().equals("android");
+                                }
+
+                                if (!found) {
+                                    continue;
+                                }
+                            }
+
+                            // ensure script applies to current page
+                            Whitelist matchRules = null;
+                            JSONArray matchPatterns = item.optJSONArray("match");
+                            if (matchPatterns == null) {
+                                matchPatterns = new JSONArray();
+                                String matchPattern = item.optString("match");
+                                if (matchPattern != null) {
+                                    matchPatterns.put(matchPattern);
+                                }
+                            }
+
+                            for (int j = 0; j < matchPatterns.length(); j++) {
+                                String matchPattern = matchPatterns.optString(j);
+                                if (matchPattern != null) {
+                                    matchRules = (matchRules == null) ? new Whitelist() : matchRules;
+                                    matchRules.addWhiteListEntry(matchPattern, false);
+                                }
+                            }
+
+                            if (matchRules != null && !matchRules.isUrlWhiteListed(this.webView.getUrl())) {
+                                continue;
+                            }
+
+                            scriptList.add(source);
                         }
                     }
                 }
