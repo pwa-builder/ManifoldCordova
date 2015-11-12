@@ -6,6 +6,7 @@ import android.content.res.AssetManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
@@ -16,6 +17,7 @@ import org.apache.cordova.CordovaPlugin;
 
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.Whitelist;
+import org.apache.cordova.engine.SystemWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -159,8 +161,12 @@ public class HostedWebApp extends CordovaPlugin {
             cordova.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    boolean result = injectScripts(scripts);
-                    callbackContext.success(result ? 1 : 0);
+                    injectScripts(scripts, new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String s) {
+                            callbackContext.success(1);
+                        }
+                    });
                 }
             });
 
@@ -274,7 +280,7 @@ public class HostedWebApp extends CordovaPlugin {
                 }
 
                 scriptList.add("hostedapp-bridge.js");
-                injectScripts(scriptList);
+                injectScripts(scriptList, null);
             }
         }
 
@@ -325,7 +331,7 @@ public class HostedWebApp extends CordovaPlugin {
                         }
 
                         if (isURLMatch && isPlatformMatch) {
-                            injectScripts(Arrays.asList(new String[] { source }));
+                            injectScripts(Arrays.asList(new String[] { source }), null);
                         }
                     }
                 }
@@ -444,7 +450,7 @@ public class HostedWebApp extends CordovaPlugin {
         return null;
     }
 
-	private boolean injectScripts(List<String> files) {
+	private void injectScripts(List<String> files, ValueCallback<String> resultCallback) {
         String script = "";
         for( int i = 0; i < files.size(); i++) {
             String fileName = files.get(i);
@@ -463,8 +469,13 @@ public class HostedWebApp extends CordovaPlugin {
             }
         }
 
-        this.webView.getEngine().loadUrl("javascript:" + Uri.encode(script), false);
-
-        return true;
+        SystemWebView webView = (SystemWebView) this.webView.getEngine().getView();
+        if (webView != null) {
+            webView.evaluateJavascript(script, resultCallback);
+        } else {
+            Log.v(LOG_TAG, String.format("WARNING: Unexpected Webview type. Expected: '%s'. Found: '%s'", SystemWebView.class.getName(), this.webView.getEngine().getView().getClass().getName()));
+            this.webView.getEngine().loadUrl("javascript:" + Uri.encode(script), false);
+            resultCallback.onReceiveValue(null);
+        }
     }
 }
