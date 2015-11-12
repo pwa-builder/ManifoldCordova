@@ -291,7 +291,6 @@ public class HostedWebApp extends CordovaPlugin {
             JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
 
             if (customScripts != null && customScripts.length() > 0) {
-				List<String> scriptList = new ArrayList<String>();
                 for (int i = 0; i < customScripts.length(); i++) {
                     JSONObject item = customScripts.optJSONObject(i);
                     if (item != null) {
@@ -335,12 +334,10 @@ public class HostedWebApp extends CordovaPlugin {
                                 continue;
                             }
 
-                            scriptList.add(source);
+							injectScripts(Arrays.asList(new String[] { source }));
                         }
                     }
                 }
-
-				injectScripts(scriptList);
             }
         }
         catch (IOException e) {
