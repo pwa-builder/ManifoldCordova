@@ -1,4 +1,4 @@
-﻿var _manifest;
+var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
@@ -278,7 +278,7 @@ function injectScripts(files, successCallback, errorCallback) {
     var uri = new Windows.Foundation.Uri('ms-appx:///www/', fileName);
 
     var onSuccess = function (content) {
-        script += '\r\n/****** ' + fileName + ' *****/\r\n' + content;
+        script += '\r\n//# sourceURL=' + fileName + '\r\n' + content;
         injectScripts(files, successCallback, errorCallback, script, (fileList ? ', ' : '') + fileName);
     };
 
