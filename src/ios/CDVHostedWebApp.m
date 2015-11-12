@@ -321,7 +321,6 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         }
         
         // inject custom scripts
-        NSMutableArray* allScripts = [[NSMutableArray alloc] init];
         setting = [self.manifest objectForKey:@"mjs_custom_scripts"];
         if (setting != nil && [setting isKindOfClass:[NSArray class]])
         {
@@ -363,11 +362,9 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                     if (isPlatformMatch && isURLMatch)
                     {
                         NSString* source = [item valueForKey:@"source"];
-                        [allScripts addObject:source];
+                        [self injectScripts: @[source]];
                     }
                 }
-                
-                [self injectScripts: allScripts];
             }
         }
     }
