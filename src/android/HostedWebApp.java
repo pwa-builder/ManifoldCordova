@@ -200,13 +200,16 @@ public class HostedWebApp extends CordovaPlugin {
             }
         }
         else if (id.equals("onPageFinished")) {
-            Log.v(LOG_TAG, String.format("Finished loading URL '%s'", this.webView.getUrl()));
-
             if (!this.isConnectionError) {
                 this.hideOfflineOverlay();
             }
 
-            this.injectCordovaScripts();
+            if (data != null) {
+                String url = data.toString();
+                Log.v(LOG_TAG, String.format("Finished loading URL '%s'", url));
+
+                this.injectCordovaScripts(url);
+            }
         }
 
         return null;
@@ -259,17 +262,45 @@ public class HostedWebApp extends CordovaPlugin {
         return this.manifestObject;
     }
 
-    private void injectCordovaScripts() {
-        JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
+    private void injectCordovaScripts(String pageUrl) {
 
-        // Inject cordova scripts if configured
-        if (cordovaSettings != null) {
-            String pluginMode = cordovaSettings.optString("pluginMode", "client");
+        // Inject cordova scripts if apply to current page
+        JSONArray apiAccessRules = this.manifestObject.optJSONArray("mjs_api_access");
+        if (apiAccessRules != null) {
+            Whitelist whitelist = new Whitelist();
+            for (int i = 0; i < apiAccessRules.length(); i++) {
+                JSONObject apiRule = apiAccessRules.optJSONObject(i);
+                if (apiRule != null) {
+                    JSONArray accessList = apiRule.optJSONArray("access");
+                    boolean addRule = true;
+                    if (accessList != null && accessList.length() > 0) {
+                        addRule = false;
+                        for (int j = 0; j < accessList.length(); j++) {
+                            String access = accessList.optString(j, "").trim();
+                            if (access.equalsIgnoreCase("cordova")) {
+                                addRule = true;
+                                break;
+                            }
+                        }
+                    }
 
-            if (!pluginMode.equals("none")) {
-                String cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
-                if (!cordovaBaseUrl.endsWith("/")) {
-                    cordovaBaseUrl += "/";
+                    if (addRule) {
+                        whitelist.addWhiteListEntry(apiRule.optString("url", "").trim(), false);
+                    }
+                }
+            }
+
+            if (whitelist.isUrlWhiteListed(pageUrl)) {
+                String pluginMode = "client";
+                String cordovaBaseUrl = "/";
+
+                JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
+                if (cordovaSettings != null) {
+                    pluginMode = cordovaSettings.optString("pluginMode", "client").trim();
+                    cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
+                    if (!cordovaBaseUrl.endsWith("/")) {
+                        cordovaBaseUrl += "/";
+                    }
                 }
 
                 this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
@@ -288,21 +319,19 @@ public class HostedWebApp extends CordovaPlugin {
         JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
 
         if (customScripts != null && customScripts.length() > 0) {
-            String pageUrl = this.webView.getUrl();
-
             for (int i = 0; i < customScripts.length(); i++) {
                 JSONObject item = customScripts.optJSONObject(i);
                 if (item != null) {
-                    String source = item.optString("source", "");
-                    if (!source.trim().isEmpty()) {
+                    String source = item.optString("source", "").trim();
+                    if (!source.isEmpty()) {
 
                         // ensure script applies to current page
                         boolean isURLMatch = true;
                         JSONArray match = item.optJSONArray("match");
                         if (match == null) {
                             match = new JSONArray();
-                            String matchString = item.optString("match", "");
-                            if (!matchString.trim().isEmpty()) {
+                            String matchString = item.optString("match", "").trim();
+                            if (!matchString.isEmpty()) {
                                 match.put(matchString);
                             }
                         }
@@ -310,7 +339,7 @@ public class HostedWebApp extends CordovaPlugin {
                         if (match.length() > 0) {
                             Whitelist whitelist = new Whitelist();
                             for (int j = 0; j < match.length(); j++) {
-                                whitelist.addWhiteListEntry(match.optString(j), false);
+                                whitelist.addWhiteListEntry(match.optString(j).trim(), false);
                             }
 
                             isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
@@ -318,8 +347,8 @@ public class HostedWebApp extends CordovaPlugin {
 
                         // ensure script applies to current platform
                         boolean isPlatformMatch = true;
-                        String platform = item.optString("platform", "");
-                        if (!platform.trim().isEmpty()) {
+                        String platform = item.optString("platform", "").trim();
+                        if (!platform.isEmpty()) {
                             isPlatformMatch = false;
                             String[] platforms = platform.split(";");
                             for (String p : platforms) {
