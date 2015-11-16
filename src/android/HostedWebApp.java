@@ -264,33 +264,29 @@ public class HostedWebApp extends CordovaPlugin {
 
     private void injectCordovaScripts(String pageUrl) {
 
-        // Inject cordova scripts if apply to current page
+        // Inject cordova scripts
         JSONArray apiAccessRules = this.manifestObject.optJSONArray("mjs_api_access");
         if (apiAccessRules != null) {
-            Whitelist whitelist = new Whitelist();
+            boolean allowApiAccess = false;
             for (int i = 0; i < apiAccessRules.length(); i++) {
                 JSONObject apiRule = apiAccessRules.optJSONObject(i);
                 if (apiRule != null) {
-                    JSONArray accessList = apiRule.optJSONArray("access");
-                    boolean addRule = true;
-                    if (accessList != null && accessList.length() > 0) {
-                        addRule = false;
-                        for (int j = 0; j < accessList.length(); j++) {
-                            String access = accessList.optString(j, "").trim();
-                            if (access.equalsIgnoreCase("cordova")) {
-                                addRule = true;
-                                break;
-                            }
+                    // ensure rule applies to current page and current platform
+                    if (this.isMatchForPage(pageUrl, apiRule)) {
+                        String access = apiRule.optString("access", "cordova").trim();
+                        if (access.equalsIgnoreCase("cordova")) {
+                            allowApiAccess = true;
+                        } else if (access.equalsIgnoreCase("none")) {
+                            allowApiAccess = false;
+                            break;
+                        } else {
+                            Log.v(LOG_TAG, String.format("Unsupported API access type '" + %s + "' found in mjs_api_access rule.", access));
                         }
-                    }
-
-                    if (addRule) {
-                        whitelist.addWhiteListEntry(apiRule.optString("url", "").trim(), false);
                     }
                 }
             }
 
-            if (whitelist.isUrlWhiteListed(pageUrl)) {
+            if (allowApiAccess) {
                 String pluginMode = "client";
                 String cordovaBaseUrl = "/";
 
@@ -317,55 +313,58 @@ public class HostedWebApp extends CordovaPlugin {
 
         // Inject custom scripts
         JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
-
         if (customScripts != null && customScripts.length() > 0) {
             for (int i = 0; i < customScripts.length(); i++) {
                 JSONObject item = customScripts.optJSONObject(i);
                 if (item != null) {
                     String source = item.optString("source", "").trim();
                     if (!source.isEmpty()) {
-
-                        // ensure script applies to current page
-                        boolean isURLMatch = true;
-                        JSONArray match = item.optJSONArray("match");
-                        if (match == null) {
-                            match = new JSONArray();
-                            String matchString = item.optString("match", "").trim();
-                            if (!matchString.isEmpty()) {
-                                match.put(matchString);
-                            }
-                        }
-
-                        if (match.length() > 0) {
-                            Whitelist whitelist = new Whitelist();
-                            for (int j = 0; j < match.length(); j++) {
-                                whitelist.addWhiteListEntry(match.optString(j).trim(), false);
-                            }
-
-                            isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
-                        }
-
-                        // ensure script applies to current platform
-                        boolean isPlatformMatch = true;
-                        String platform = item.optString("platform", "").trim();
-                        if (!platform.isEmpty()) {
-                            isPlatformMatch = false;
-                            String[] platforms = platform.split(";");
-                            for (String p : platforms) {
-                                if (p.trim().equalsIgnoreCase("android")) {
-                                    isPlatformMatch = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (isURLMatch && isPlatformMatch) {
-                            injectScripts(Arrays.asList(new String[] { source }), null);
+                        // ensure script applies to current page and current platform
+                        if (this.isMatchForPage(pageUrl, item)) {
+                            injectScripts(Arrays.asList(new String[]{source}), null);
                         }
                     }
                 }
             }
         }
+    }
+
+    private boolean isMatchForPage(String pageUrl, JSONObject item) {
+        // ensure item applies to current platform
+        boolean isPlatformMatch = true;
+        String platform = item.optString("platform", "").trim();
+        if (!platform.isEmpty()) {
+            isPlatformMatch = false;
+            String[] platforms = platform.split(";");
+            for (String p : platforms) {
+                if (p.trim().equalsIgnoreCase("android")) {
+                    isPlatformMatch = true;
+                    break;
+                }
+            }
+        }
+
+        // ensure item applies to current page
+        boolean isURLMatch = true;
+        JSONArray match = item.optJSONArray("match");
+        if (match == null) {
+            match = new JSONArray();
+            String matchString = item.optString("match", "").trim();
+            if (!matchString.isEmpty()) {
+                match.put(matchString);
+            }
+        }
+
+        if (match.length() > 0) {
+            Whitelist whitelist = new Whitelist();
+            for (int j = 0; j < match.length(); j++) {
+                whitelist.addWhiteListEntry(match.optString(j).trim(), false);
+            }
+
+            isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
+        }
+
+        return isPlatformMatch && isURLMatch;
     }
 
     private void onManifestLoaded() {
