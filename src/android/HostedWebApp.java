@@ -200,13 +200,16 @@ public class HostedWebApp extends CordovaPlugin {
             }
         }
         else if (id.equals("onPageFinished")) {
-            Log.v(LOG_TAG, String.format("Finished loading URL '%s'", this.webView.getUrl()));
-
             if (!this.isConnectionError) {
                 this.hideOfflineOverlay();
             }
 
-            this.injectCordovaScripts();
+            if (data != null) {
+                String url = data.toString();
+                Log.v(LOG_TAG, String.format("Finished loading URL '%s'", url));
+
+                this.injectCordovaScripts(url);
+            }
         }
 
         return null;
@@ -259,17 +262,41 @@ public class HostedWebApp extends CordovaPlugin {
         return this.manifestObject;
     }
 
-    private void injectCordovaScripts() {
-        JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
+    private void injectCordovaScripts(String pageUrl) {
 
-        // Inject cordova scripts if configured
-        if (cordovaSettings != null) {
-            String pluginMode = cordovaSettings.optString("pluginMode", "client");
+        // Inject cordova scripts
+        JSONArray apiAccessRules = this.manifestObject.optJSONArray("mjs_api_access");
+        if (apiAccessRules != null) {
+            boolean allowApiAccess = false;
+            for (int i = 0; i < apiAccessRules.length(); i++) {
+                JSONObject apiRule = apiAccessRules.optJSONObject(i);
+                if (apiRule != null) {
+                    // ensure rule applies to current platform and current page
+                    if (this.isMatchingRuleForPlatform(apiRule) && this.isMatchingRuleForPage(pageUrl, apiRule)) {
+                        String access = apiRule.optString("access", "cordova").trim();
+                        if (access.equalsIgnoreCase("cordova")) {
+                            allowApiAccess = true;
+                        } else if (access.equalsIgnoreCase("none")) {
+                            allowApiAccess = false;
+                            break;
+                        } else {
+                            Log.v(LOG_TAG, String.format("Unsupported API access type '%s' found in mjs_api_access rule.", access));
+                        }
+                    }
+                }
+            }
 
-            if (!pluginMode.equals("none")) {
-                String cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
-                if (!cordovaBaseUrl.endsWith("/")) {
-                    cordovaBaseUrl += "/";
+            if (allowApiAccess) {
+                String pluginMode = "client";
+                String cordovaBaseUrl = "/";
+
+                JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
+                if (cordovaSettings != null) {
+                    pluginMode = cordovaSettings.optString("plugin_mode", "client").trim();
+                    cordovaBaseUrl = cordovaSettings.optString("base_url", "").trim();
+                    if (!cordovaBaseUrl.endsWith("/")) {
+                        cordovaBaseUrl += "/";
+                    }
                 }
 
                 this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
@@ -285,58 +312,63 @@ public class HostedWebApp extends CordovaPlugin {
         }
 
         // Inject custom scripts
-        JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
-
+        JSONArray customScripts = this.manifestObject.optJSONArray("mjs_import_scripts");
         if (customScripts != null && customScripts.length() > 0) {
-            String pageUrl = this.webView.getUrl();
-
             for (int i = 0; i < customScripts.length(); i++) {
                 JSONObject item = customScripts.optJSONObject(i);
                 if (item != null) {
-                    String source = item.optString("source", "");
-                    if (!source.trim().isEmpty()) {
-
+                    String source = item.optString("src", "").trim();
+                    if (!source.isEmpty()) {
                         // ensure script applies to current page
-                        boolean isURLMatch = true;
-                        JSONArray match = item.optJSONArray("match");
-                        if (match == null) {
-                            match = new JSONArray();
-                            String matchString = item.optString("match", "");
-                            if (!matchString.trim().isEmpty()) {
-                                match.put(matchString);
-                            }
-                        }
-
-                        if (match.length() > 0) {
-                            Whitelist whitelist = new Whitelist();
-                            for (int j = 0; j < match.length(); j++) {
-                                whitelist.addWhiteListEntry(match.optString(j), false);
-                            }
-
-                            isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
-                        }
-
-                        // ensure script applies to current platform
-                        boolean isPlatformMatch = true;
-                        String platform = item.optString("platform", "");
-                        if (!platform.trim().isEmpty()) {
-                            isPlatformMatch = false;
-                            String[] platforms = platform.split(";");
-                            for (String p : platforms) {
-                                if (p.trim().equalsIgnoreCase("android")) {
-                                    isPlatformMatch = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (isURLMatch && isPlatformMatch) {
-                            injectScripts(Arrays.asList(new String[] { source }), null);
+                        if (this.isMatchingRuleForPage(pageUrl, item)) {
+                            injectScripts(Arrays.asList(new String[]{source}), null);
                         }
                     }
                 }
             }
         }
+    }
+
+    private boolean isMatchingRuleForPlatform(JSONObject item) {
+        // ensure item applies to current platform
+        boolean isPlatformMatch = true;
+        String platform = item.optString("platform", "").trim();
+        if (!platform.isEmpty()) {
+            isPlatformMatch = false;
+            String[] platforms = platform.split(";");
+            for (String p : platforms) {
+                if (p.trim().equalsIgnoreCase("android")) {
+                    isPlatformMatch = true;
+                    break;
+                }
+            }
+        }
+
+        return isPlatformMatch;
+    }
+
+    private boolean isMatchingRuleForPage(String pageUrl, JSONObject item) {
+        // ensure item applies to current page
+        boolean isURLMatch = true;
+        JSONArray match = item.optJSONArray("match");
+        if (match == null) {
+            match = new JSONArray();
+            String matchString = item.optString("match", "").trim();
+            if (!matchString.isEmpty()) {
+                match.put(matchString);
+            }
+        }
+
+        if (match.length() > 0) {
+            Whitelist whitelist = new Whitelist();
+            for (int j = 0; j < match.length(); j++) {
+                whitelist.addWhiteListEntry(match.optString(j).trim(), false);
+            }
+
+            isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
+        }
+
+        return isURLMatch;
     }
 
     private void onManifestLoaded() {

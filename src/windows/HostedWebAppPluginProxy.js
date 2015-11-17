@@ -1,4 +1,4 @@
-var _manifest;
+﻿var _manifest;
 var _manifestError;
 var _offlineView;
 var _mainView;
@@ -87,12 +87,16 @@ function navigationCompletedEvent(evt) {
 }
 
 function domContentLoadedEvent(evt) {
+    console.log('Finished loading URL: ' + _mainView.src);
+
     hideExtendedSplashScreen();
 
     // inject Cordova
-    if (_manifest && _manifest.mjs_cordova) {
-        var pluginMode = _manifest.mjs_cordova.pluginMode || 'client';
-        var cordovaBaseUrl = (_manifest.mjs_cordova.baseUrl || '').trim();
+    if (isCordovaEnabled()) {
+        var cordova = _manifest.mjs_cordova || {};
+
+        var pluginMode = cordova.plugin_mode || 'client';
+        var cordovaBaseUrl = (cordova.base_url || '').trim();
         if (cordovaBaseUrl.indexOf('/', cordovaBaseUrl.length - 1) === -1) {
             cordovaBaseUrl += '/';
         }
@@ -108,36 +112,68 @@ function domContentLoadedEvent(evt) {
         injectScripts(scriptsToInject);
     }
 
-    // inject custom scripts
-    if (_manifest && _manifest.mjs_custom_scripts && _manifest.mjs_custom_scripts instanceof Array) {
-        var scriptFiles = _manifest.mjs_custom_scripts.filter(function (item) {
-
-            // ensure script applies to current platform
-            if (item.platform && item.platform.split(';')
-                .map(function (item) { return item.trim(); })
-                .indexOf('windows') < 0) {
-                return false;
-            }
-
-            // ensure script applies to current page
-            var match = item.match;
-            if (match) {
-                if (typeof match === 'string' && match.length) {
-                    match = [match];
-                }
-
-                return match.some(function (item) { return convertPatternToRegex(item).test(_mainView.src); });
-            }
-
-            return true;
-        }).map(function (item) {
-            return item.source;
-        });
+    // inject import scripts
+    if (_manifest && _manifest.mjs_import_scripts && _manifest.mjs_import_scripts instanceof Array) {
+        var scriptFiles = _manifest.mjs_import_scripts
+            .filter(isMatchingRuleForPage)
+            .map(function (item) {
+                return item.src;
+            });
 
         if (scriptFiles.length) {
             injectScripts(scriptFiles);
         }
     }
+}
+
+// checks if Cordova runtime environment is enabled for the current page
+function isCordovaEnabled() {
+    var allow = true;
+    var enableCordova = false;
+    var accessRules = _manifest.mjs_api_access;
+    if (accessRules) {
+        accessRules.forEach(function (rule) {
+            if (isMatchingRuleForPage(rule, true)) {
+                var access = rule.access;
+                if (!access || access === 'cordova') {
+                    enableCordova = true;
+                }
+                else if (access === 'none') {
+                    allow = false;
+                }
+                else {
+                    console.log('Unsupported API access type \'' + access + '\' found in mjs_api_access rule.');
+                }
+            }
+        });
+    }
+
+    return enableCordova && allow;
+}
+
+// check if an API access or custom script match rule applies to the current page
+function isMatchingRuleForPage(rule, checkPlatform) {
+
+    // ensure rule applies to current platform
+    if (checkPlatform) {
+        if (rule.platform && rule.platform.split(';')
+            .map(function (item) { return item.trim(); })
+            .indexOf('windows') < 0) {
+                return false;
+            }
+    }
+
+    // ensure rule applies to current page
+    var match = rule.match;
+    if (match) {
+        if (typeof match === 'string' && match.length) {
+            match = [match];
+        }
+
+        return match.some(function (item) { return convertPatternToRegex(item).test(_mainView.src); });
+    }
+
+    return true;
 }
 
 // handles network connectivity change events
