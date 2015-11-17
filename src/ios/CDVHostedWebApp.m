@@ -220,7 +220,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         {
             for (NSDictionary* rule in accessRules)
             {
-                if ([self isMatchingRuleForPage:rule])
+                if ([self isMatchingRuleForPage:rule withPlatformCheck:YES])
                 {
                     setting = [rule objectForKey:@"access"];
                     
@@ -246,27 +246,34 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     return enableCordova;
 }
 
--(BOOL) isMatchingRuleForPage:(NSDictionary*) rule
+-(BOOL) isMatchingRuleForPage:(NSDictionary*) rule withPlatformCheck: (BOOL) checkPlatform
 {
     // ensure rule applies to current platform
-    BOOL isPlatformMatch = YES;
-    NSObject* setting = [rule objectForKey:@"platform"];
-    if (setting != nil && [setting isKindOfClass:[NSString class]])
+    if (checkPlatform)
     {
-        isPlatformMatch = NO;
-        for (id item in [(NSString*)setting componentsSeparatedByString:@";"])
+        BOOL isPlatformMatch = NO;
+        NSObject* setting = [rule objectForKey:@"platform"];
+        if (setting != nil && [setting isKindOfClass:[NSString class]])
         {
-            if ([[item stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] caseInsensitiveCompare:IOS_PLATFORM] == NSOrderedSame)
+            for (id item in [(NSString*)setting componentsSeparatedByString:@";"])
             {
-                isPlatformMatch = YES;
-                break;
+                if ([[item stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] caseInsensitiveCompare:IOS_PLATFORM] == NSOrderedSame)
+                {
+                    isPlatformMatch = YES;
+                    break;
+                }
+            }
+            
+            if (!isPlatformMatch)
+            {
+                return NO;
             }
         }
     }
     
     // ensure rule applies to current page
     BOOL isURLMatch = YES;
-    setting = [rule objectForKey:@"match"];
+    NSObject* setting = [rule objectForKey:@"match"];
     if (setting != nil)
     {
         NSArray* match = nil;
@@ -287,7 +294,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         }
     }
     
-    return isPlatformMatch && isURLMatch;
+    return isURLMatch;
 }
 
 // Creates an additional webview to load the offline page, places it above the content webview, and hides it. It will
@@ -416,7 +423,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             {
                 for (NSDictionary* item in customScripts)
                 {
-                    if ([self isMatchingRuleForPage:item])
+                    if ([self isMatchingRuleForPage:item withPlatformCheck:NO])
                     {
                         NSString* source = [item valueForKey:@"src"];
                         [self injectScripts: @[source]];
