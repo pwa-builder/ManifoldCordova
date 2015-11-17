@@ -112,12 +112,12 @@ function domContentLoadedEvent(evt) {
         injectScripts(scriptsToInject);
     }
 
-    // inject custom scripts
-    if (_manifest && _manifest.mjs_custom_scripts && _manifest.mjs_custom_scripts instanceof Array) {
-        var scriptFiles = _manifest.mjs_custom_scripts
+    // inject import scripts
+    if (_manifest && _manifest.mjs_import_scripts && _manifest.mjs_import_scripts instanceof Array) {
+        var scriptFiles = _manifest.mjs_import_scripts
             .filter(isMatchingRuleForPage)
             .map(function (item) {
-                return item.source;
+                return item.src;
             });
 
         if (scriptFiles.length) {
@@ -154,14 +154,14 @@ function isCordovaEnabled() {
 // check if an API access or custom script match rule applies to the current page
 function isMatchingRuleForPage(rule) {
 
-    // ensure script applies to current platform
+    // ensure rule applies to current platform
     if (rule.platform && rule.platform.split(';')
         .map(function (item) { return item.trim(); })
         .indexOf('windows') < 0) {
         return false;
     }
 
-    // ensure script applies to current page
+    // ensure rule applies to current page
     var match = rule.match;
     if (match) {
         if (typeof match === 'string' && match.length) {
