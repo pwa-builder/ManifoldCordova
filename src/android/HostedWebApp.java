@@ -271,8 +271,8 @@ public class HostedWebApp extends CordovaPlugin {
             for (int i = 0; i < apiAccessRules.length(); i++) {
                 JSONObject apiRule = apiAccessRules.optJSONObject(i);
                 if (apiRule != null) {
-                    // ensure rule applies to current page and current platform
-                    if (this.isMatchForPage(pageUrl, apiRule)) {
+                    // ensure rule applies to current platform and current page
+                    if (this.isMatchingRuleForPlatform(apiRule) && this.isMatchingRuleForPage(pageUrl, apiRule)) {
                         String access = apiRule.optString("access", "cordova").trim();
                         if (access.equalsIgnoreCase("cordova")) {
                             allowApiAccess = true;
@@ -292,8 +292,8 @@ public class HostedWebApp extends CordovaPlugin {
 
                 JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
                 if (cordovaSettings != null) {
-                    pluginMode = cordovaSettings.optString("pluginMode", "client").trim();
-                    cordovaBaseUrl = cordovaSettings.optString("baseUrl", "").trim();
+                    pluginMode = cordovaSettings.optString("plugin_mode", "client").trim();
+                    cordovaBaseUrl = cordovaSettings.optString("base_url", "").trim();
                     if (!cordovaBaseUrl.endsWith("/")) {
                         cordovaBaseUrl += "/";
                     }
@@ -312,15 +312,15 @@ public class HostedWebApp extends CordovaPlugin {
         }
 
         // Inject custom scripts
-        JSONArray customScripts = this.manifestObject.optJSONArray("mjs_custom_scripts");
+        JSONArray customScripts = this.manifestObject.optJSONArray("mjs_import_scripts");
         if (customScripts != null && customScripts.length() > 0) {
             for (int i = 0; i < customScripts.length(); i++) {
                 JSONObject item = customScripts.optJSONObject(i);
                 if (item != null) {
-                    String source = item.optString("source", "").trim();
+                    String source = item.optString("src", "").trim();
                     if (!source.isEmpty()) {
-                        // ensure script applies to current page and current platform
-                        if (this.isMatchForPage(pageUrl, item)) {
+                        // ensure script applies to current page
+                        if (this.isMatchingRuleForPage(pageUrl, item)) {
                             injectScripts(Arrays.asList(new String[]{source}), null);
                         }
                     }
@@ -329,7 +329,7 @@ public class HostedWebApp extends CordovaPlugin {
         }
     }
 
-    private boolean isMatchForPage(String pageUrl, JSONObject item) {
+    private boolean isMatchingRuleForPlatform(JSONObject item) {
         // ensure item applies to current platform
         boolean isPlatformMatch = true;
         String platform = item.optString("platform", "").trim();
@@ -344,6 +344,10 @@ public class HostedWebApp extends CordovaPlugin {
             }
         }
 
+        return isPlatformMatch;
+    }
+
+    private boolean isMatchingRuleForPage(String pageUrl, JSONObject item) {
         // ensure item applies to current page
         boolean isURLMatch = true;
         JSONArray match = item.optJSONArray("match");
@@ -364,7 +368,7 @@ public class HostedWebApp extends CordovaPlugin {
             isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
         }
 
-        return isPlatformMatch && isURLMatch;
+        return isURLMatch;
     }
 
     private void onManifestLoaded() {
