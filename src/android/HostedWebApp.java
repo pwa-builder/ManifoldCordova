@@ -280,7 +280,7 @@ public class HostedWebApp extends CordovaPlugin {
                             allowApiAccess = false;
                             break;
                         } else {
-                            Log.v(LOG_TAG, String.format("Unsupported API access type '" + %s + "' found in mjs_api_access rule.", access));
+                            Log.v(LOG_TAG, String.format("Unsupported API access type '%s' found in mjs_api_access rule.", access));
                         }
                     }
                 }
