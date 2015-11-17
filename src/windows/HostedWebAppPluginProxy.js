@@ -133,7 +133,7 @@ function isCordovaEnabled() {
     var accessRules = _manifest.mjs_api_access;
     if (accessRules) {
         accessRules.forEach(function (rule) {
-            if (isMatchingRuleForPage(rule)) {
+            if (isMatchingRuleForPage(rule, true)) {
                 var access = rule.access;
                 if (!access || access === 'cordova') {
                     enableCordova = true;
@@ -152,13 +152,15 @@ function isCordovaEnabled() {
 }
 
 // check if an API access or custom script match rule applies to the current page
-function isMatchingRuleForPage(rule) {
+function isMatchingRuleForPage(rule, checkPlatform) {
 
     // ensure rule applies to current platform
-    if (rule.platform && rule.platform.split(';')
-        .map(function (item) { return item.trim(); })
-        .indexOf('windows') < 0) {
-        return false;
+    if (checkPlatform) {
+        if (rule.platform && rule.platform.split(';')
+            .map(function (item) { return item.trim(); })
+            .indexOf('windows') < 0) {
+                return false;
+            }
     }
 
     // ensure rule applies to current page
