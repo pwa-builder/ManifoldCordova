@@ -95,8 +95,8 @@ function domContentLoadedEvent(evt) {
     if (isCordovaEnabled()) {
         var cordova = _manifest.mjs_cordova || {};
 
-        var pluginMode = cordova.pluginMode || 'client';
-        var cordovaBaseUrl = (cordova.baseUrl || '').trim();
+        var pluginMode = cordova.plugin_mode || 'client';
+        var cordovaBaseUrl = (cordova.base_url || '').trim();
         if (cordovaBaseUrl.indexOf('/', cordovaBaseUrl.length - 1) === -1) {
             cordovaBaseUrl += '/';
         }
