@@ -209,6 +209,87 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     return[self.webView stringByEvaluatingJavaScriptFromString:content] != nil;
 }
 
+- (BOOL) isCordovaEnabled
+{
+    BOOL enableCordova = NO;
+    NSObject* setting = [self.manifest objectForKey:@"mjs_api_access"];
+    if (setting != nil && [setting isKindOfClass:[NSArray class]])
+    {
+        NSArray* accessRules = (NSArray*) setting;
+        if (accessRules != nil)
+        {
+            for (NSDictionary* rule in accessRules)
+            {
+                if ([self isMatchingRuleForPage:rule])
+                {
+                    setting = [rule objectForKey:@"access"];
+                    
+                    NSString* access = setting != nil ?
+                        [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] : nil;
+                    if (access == nil || [access isEqualToString:@"cordova"])
+                    {
+                        enableCordova = YES;
+                    }
+                    else if ([access isEqualToString:@"none"])
+                    {
+                        return NO;
+                    }
+                    else
+                    {
+                        NSLog(@"ERROR unsupported access type '%@' found in mjs_api_access rule.", access);
+                    }
+                }
+            }
+        }
+    }
+    
+    return enableCordova;
+}
+
+-(BOOL) isMatchingRuleForPage:(NSDictionary*) rule
+{
+    // ensure rule applies to current platform
+    BOOL isPlatformMatch = YES;
+    NSObject* setting = [rule objectForKey:@"platform"];
+    if (setting != nil && [setting isKindOfClass:[NSString class]])
+    {
+        isPlatformMatch = NO;
+        for (id item in [(NSString*)setting componentsSeparatedByString:@";"])
+        {
+            if ([[item stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] caseInsensitiveCompare:IOS_PLATFORM] == NSOrderedSame)
+            {
+                isPlatformMatch = YES;
+                break;
+            }
+        }
+    }
+    
+    // ensure rule applies to current page
+    BOOL isURLMatch = YES;
+    setting = [rule objectForKey:@"match"];
+    if (setting != nil)
+    {
+        NSArray* match = nil;
+        if ([setting isKindOfClass:[NSArray class]])
+        {
+            match = (NSArray*) setting;
+        }
+        else if ([setting isKindOfClass:[NSString class]])
+        {
+            match = [NSArray arrayWithObjects:setting, nil];
+        }
+        
+        if (match != nil)
+        {
+            CDVWhitelist *whitelist = [[CDVWhitelist alloc] initWithArray:match];
+            NSURL* url = self.webView.request.URL;
+            isURLMatch = [whitelist URLIsAllowed:url];
+        }
+    }
+    
+    return isPlatformMatch && isURLMatch;
+}
+
 // Creates an additional webview to load the offline page, places it above the content webview, and hides it. It will
 // be made visible whenever network connectivity is lost.
 - (void)createOfflineView
@@ -288,20 +369,26 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         }
         
         // inject Cordova
-        NSObject* setting = [self.manifest objectForKey:@"mjs_cordova"];
-        if (setting != nil && [setting isKindOfClass:[NSDictionary class]])
+        if ([self isCordovaEnabled])
         {
+            NSObject* setting = [self.manifest objectForKey:@"mjs_cordova"];
+            if (setting == nil && ![setting isKindOfClass:[NSDictionary class]])
+            {
+                setting = [[NSDictionary alloc] init];
+            }
+            
             NSDictionary* cordova = (NSDictionary*) setting;
             
             setting = [cordova objectForKey:@"pluginMode"];
             NSString* pluginMode = (setting != nil && [setting isKindOfClass:[NSString class]])
-            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-            : DEFAULT_PLUGIN_MODE;
-
+                ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+                : DEFAULT_PLUGIN_MODE;
+            
             setting = [cordova objectForKey:@"baseUrl"];
             NSString* cordovaBaseUrl = (setting != nil && [setting isKindOfClass:[NSString class]])
-            ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-            : DEFAULT_CORDOVA_BASE_URL;
+                ? [(NSString*)setting stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+                : DEFAULT_CORDOVA_BASE_URL;
+            
             if (![cordovaBaseUrl hasSuffix:@"/"])
             {
                 cordovaBaseUrl = [cordovaBaseUrl stringByAppendingString:@"/"];
@@ -321,7 +408,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         }
         
         // inject custom scripts
-        setting = [self.manifest objectForKey:@"mjs_custom_scripts"];
+        NSObject* setting = [self.manifest objectForKey:@"mjs_custom_scripts"];
         if (setting != nil && [setting isKindOfClass:[NSArray class]])
         {
             NSArray* customScripts = (NSArray*) setting;
