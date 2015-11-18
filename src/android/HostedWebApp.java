@@ -272,7 +272,7 @@ public class HostedWebApp extends CordovaPlugin {
                 JSONObject apiRule = apiAccessRules.optJSONObject(i);
                 if (apiRule != null) {
                     // ensure rule applies to current platform and current page
-                    if (this.isMatchingRuleForPlatform(apiRule) && this.isMatchingRuleForPage(pageUrl, apiRule)) {
+                    if (this.isMatchingRuleForPage(pageUrl, apiRule, true)) {
                         String access = apiRule.optString("access", "cordova").trim();
                         if (access.equalsIgnoreCase("cordova")) {
                             allowApiAccess = true;
@@ -320,7 +320,7 @@ public class HostedWebApp extends CordovaPlugin {
                     String source = item.optString("src", "").trim();
                     if (!source.isEmpty()) {
                         // ensure script applies to current page
-                        if (this.isMatchingRuleForPage(pageUrl, item)) {
+                        if (this.isMatchingRuleForPage(pageUrl, item, false)) {
                             injectScripts(Arrays.asList(new String[]{source}), null);
                         }
                     }
@@ -329,25 +329,27 @@ public class HostedWebApp extends CordovaPlugin {
         }
     }
 
-    private boolean isMatchingRuleForPlatform(JSONObject item) {
+    private boolean isMatchingRuleForPage(String pageUrl, JSONObject item, boolean checkPlatform) {
         // ensure item applies to current platform
-        boolean isPlatformMatch = true;
-        String platform = item.optString("platform", "").trim();
-        if (!platform.isEmpty()) {
-            isPlatformMatch = false;
-            String[] platforms = platform.split(";");
-            for (String p : platforms) {
-                if (p.trim().equalsIgnoreCase("android")) {
-                    isPlatformMatch = true;
-                    break;
+        if (checkPlatform) {
+            boolean isPlatformMatch = true;
+            String platform = item.optString("platform", "").trim();
+            if (!platform.isEmpty()) {
+                isPlatformMatch = false;
+                String[] platforms = platform.split(";");
+                for (String p : platforms) {
+                    if (p.trim().equalsIgnoreCase("android")) {
+                        isPlatformMatch = true;
+                        break;
+                    }
                 }
+            }
+
+            if (!isPlatformMatch) {
+                return false;
             }
         }
 
-        return isPlatformMatch;
-    }
-
-    private boolean isMatchingRuleForPage(String pageUrl, JSONObject item) {
         // ensure item applies to current page
         boolean isURLMatch = true;
         JSONArray match = item.optJSONArray("match");
@@ -448,10 +450,10 @@ public class HostedWebApp extends CordovaPlugin {
                 public void run() {
                     if (me.rootLayout != null) {
                         me.rootLayout.setVisibility(View.VISIBLE);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
     }
 
     private void hideOfflineOverlay() {
