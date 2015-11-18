@@ -24,6 +24,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -484,32 +486,81 @@ public class HostedWebApp extends CordovaPlugin {
         return null;
     }
 
-	private void injectScripts(List<String> files, ValueCallback<String> resultCallback) {
-        String script = "";
-        for( int i = 0; i < files.size(); i++) {
-            String fileName = files.get(i);
-            Log.w(LOG_TAG, String.format("Injecting script: '%s'", fileName));
-            try {
-                InputStream inputStream = this.activity.getResources().getAssets().open("www/" + fileName);
-                int size = inputStream.available();
-                byte[] bytes = new byte[size];
-                inputStream.read(bytes);
-                inputStream.close();
-                String content = new String(bytes, "UTF-8");
-                script += "\r\n//# sourceURL=" + fileName + "\r\n" + content;
-            } catch(IOException e) {
-                Log.v(LOG_TAG, String.format("ERROR: failed to load script file: '%s'", fileName));
-                e.printStackTrace();
-            }
-        }
+	private void injectScripts(final List<String> files, final ValueCallback<String> resultCallback) {
+        final HostedWebApp me = this;
 
-        SystemWebView webView = (SystemWebView) this.webView.getEngine().getView();
-        if (webView != null) {
-            webView.evaluateJavascript(script, resultCallback);
-        } else {
-            Log.v(LOG_TAG, String.format("WARNING: Unexpected Webview type. Expected: '%s'. Found: '%s'", SystemWebView.class.getName(), this.webView.getEngine().getView().getClass().getName()));
-            this.webView.getEngine().loadUrl("javascript:" + Uri.encode(script), false);
-            resultCallback.onReceiveValue(null);
-        }
+        this.cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                String script = "";
+                for (int i = 0; i < files.size(); i++) {
+                    String fileName = files.get(i);
+                    String content = "";
+                    Log.w(LOG_TAG, String.format("Injecting script: '%s'", fileName));
+
+                    try {
+                        Uri uri = Uri.parse(fileName);
+                        if (uri.isRelative()) {
+                            // Load script file from assets
+                            try {
+                                InputStream inputStream = me.activity.getResources().getAssets().open("www/" + fileName);
+                                content = me.ReadStreamContent(inputStream);
+
+                            } catch (IOException e) {
+                                Log.v(LOG_TAG, String.format("ERROR: failed to load script file: '%s'", fileName));
+                                e.printStackTrace();
+                            }
+                        } else {
+                            // load script file from URL
+                            URL url = new URL(fileName);
+                            try {
+                                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                                try {
+                                    InputStream inputStream = urlConnection.getInputStream();
+                                    content = me.ReadStreamContent(inputStream);
+                                } finally {
+                                    urlConnection.disconnect();
+                                }
+                            } catch (IOException e) {
+                                Log.v(LOG_TAG, String.format("ERROR: failed to load script file from URL: '%s'", fileName));
+                                e.printStackTrace();
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.v(LOG_TAG, String.format("ERROR: Invalid path format of script file: '%s'", fileName));
+                        e.printStackTrace();
+                    }
+
+                    if (!content.isEmpty()) {
+                        script += "\r\n//# sourceURL=" + fileName + "\r\n" + content;
+                    }
+                }
+
+                final String scriptToInject = script;
+                me.activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SystemWebView webView = (SystemWebView) me.webView.getEngine().getView();
+                        if (webView != null) {
+                            webView.evaluateJavascript(scriptToInject, resultCallback);
+                        } else {
+                            Log.v(LOG_TAG, String.format("WARNING: Unexpected Webview type. Expected: '%s'. Found: '%s'", SystemWebView.class.getName(), me.webView.getEngine().getView().getClass().getName()));
+                            me.webView.getEngine().loadUrl("javascript:" + Uri.encode(scriptToInject), false);
+                            resultCallback.onReceiveValue(null);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private String ReadStreamContent(InputStream inputStream) throws IOException {
+        int size = inputStream.available();
+        byte[] bytes = new byte[size];
+        inputStream.read(bytes);
+        inputStream.close();
+        String content = new String(bytes, "UTF-8");
+
+        return content;
     }
 }
