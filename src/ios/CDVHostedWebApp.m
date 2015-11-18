@@ -194,9 +194,19 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     NSString* content = @"";
     for (NSString* scriptName in scriptList)
     {
-        NSString* scriptPath = [NSString stringWithFormat:@"www/%@", scriptName];
+        NSURL* scriptUrl = [NSURL URLWithString:scriptName relativeToURL:[NSURL URLWithString:@"www/"]];
+        NSString* scriptPath = scriptUrl.absoluteString;
         NSError *error = nil;
-        NSString* fileContents = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
+        NSString* fileContents =  nil;
+        if (scriptUrl.scheme == nil)
+        {
+            fileContents = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
+        }
+        else
+        {
+            fileContents = [NSString stringWithContentsOfURL:scriptUrl encoding:NSUTF8StringEncoding error:&error];
+        }
+        
         if (error == nil) {
             // prefix with @ sourceURL=<scriptName> comment to make the injected scripts visible in Safari's Web Inspector for debugging purposes
             content = [content stringByAppendingFormat:@"\r\n//@ sourceURL=%@\r\n%@", scriptName, fileContents];
