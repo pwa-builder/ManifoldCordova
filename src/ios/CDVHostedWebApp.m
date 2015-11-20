@@ -510,7 +510,8 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         [scopeList addObject:[baseURL absoluteString]];
     }
     
-    // add additional navigation rules
+    // add additional navigation rules from mjs_access_whitelist
+    // TODO: mjs_access_whitelist is deprecated. Should be removed in future versions
     NSObject* setting = [self.manifest objectForKey:@"mjs_access_whitelist"];
     if (setting != nil && [setting isKindOfClass:[NSArray class]])
     {
@@ -524,6 +525,20 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                 {
                     [scopeList addObject:accessUrl];
                 }
+            }
+        }
+    }
+    
+    // add additional navigation rules from mjs_extended_scope
+    setting = [self.manifest objectForKey:@"mjs_extended_scope"];
+    if (setting != nil && [setting isKindOfClass:[NSArray class]])
+    {
+        NSArray* scopeRules = (NSArray*) setting;
+        if (scopeRules != nil)
+        {
+            for (NSString* rule in scopeRules)
+            {
+                [scopeList addObject:rule];
             }
         }
     }

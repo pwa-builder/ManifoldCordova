@@ -255,11 +255,18 @@ function configureWhiteList(manifest) {
         baseUrlPattern = baseUrlPattern.combineUri('*');
         _whiteList.push(convertPatternToRegex(baseUrlPattern.absoluteUri));
 
-
-        // add additional access rules
+        // add additional access rules from mjs_access_whitelist
+        // TODO: mjs_access_whitelist is deprecated. Should be removed in future versions
         if (manifest.mjs_access_whitelist && manifest.mjs_access_whitelist instanceof Array) {
             manifest.mjs_access_whitelist.forEach(function (rule) {
                 _whiteList.push(convertPatternToRegex(rule.url));
+            });
+        }
+
+        // add additional access rules from mjs_extended_scope
+        if (manifest.mjs_extended_scope && manifest.mjs_extended_scope instanceof Array) {
+            manifest.mjs_extended_scope.forEach(function (rule) {
+                _whiteList.push(convertPatternToRegex(rule));
             });
         }
     }
