@@ -162,7 +162,8 @@ function processAccessRules(manifest) {
         
         var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
     
-        // add additional navigation rules
+        // add additional navigation rules from mjs_access_whitelist
+        // TODO: mjs_access_whitelist is deprecated. Should be removed in future versions
         if (manifest.mjs_access_whitelist && manifest.mjs_access_whitelist instanceof Array) {
             manifest.mjs_access_whitelist.forEach(function (item) {
                 // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
@@ -171,6 +172,19 @@ function processAccessRules(manifest) {
                     var navigationEl = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
                     navigationEl.set('hap-rule','yes');
                     navigationEl.set('href', item.url);  
+                }
+            });
+        }
+        
+        // add additional navigation rules from mjs_extended_scope
+        if (manifest.mjs_extended_scope && manifest.mjs_extended_scope instanceof Array) {
+            manifest.mjs_extended_scope.forEach(function (item) {
+                // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
+                if (item.indexOf(baseUrl) !== 0 ) {  
+                    // add as a navigation rule
+                    var navigationEl = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
+                    navigationEl.set('hap-rule','yes');
+                    navigationEl.set('href', item);  
                 }
             });
         }

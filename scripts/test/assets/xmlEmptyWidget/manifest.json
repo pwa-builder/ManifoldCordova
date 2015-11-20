@@ -4,8 +4,8 @@
 	"orientation": "landscape",
 	"display": "fullscreen",
 	"scope": "/scope-path/",
-	"mjs_access_whitelist": [
-		{ "url": "whitelist-rule-1" },
-		{ "url": "whitelist-rule-2" }
-  ]
+	"mjs_extended_scope": [
+		"whitelist-rule-1",
+		"whitelist-rule-2"
+	]
 }
