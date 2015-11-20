@@ -196,12 +196,11 @@ Windows Phone 8.1
 iOS  
 Android
 
-### Windows 8.1 and Windows Phone 8.1 Quirks
+### Windows and Windows Phone Quirks
 
-Cordova for Android and iOS platforms provide a security policy to control which network requests triggered by the page (css, js, images, XHRs, etc.) are allowed to be made; this means that they will be blocked if they are outside the scope and do not match any of the access rules defined in the manifest.
+Cordova for Android and iOS platforms provide a security policy to control which network requests triggered by the page (css, js, images, XHRs, etc.) are allowed to be made; this means that they will be blocked if they don't match the `origin` attribute of any of the `<access>` elements defined in the Cordova configuration file (**config.xml**).
 
 The Windows and Windows Phone platforms do not provide control for these kind of requests, and they will be allowed.
-
 
 ## Changelog
 
