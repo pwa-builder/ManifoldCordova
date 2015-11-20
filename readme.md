@@ -130,20 +130,18 @@ For example, the following manifest references icons from the _/resources_ path 
 }
 </pre>
 
-### URL Access Rules
-For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **mjs_access_whitelist** that defines an array of access rules each one consisting of a _url_ attribute that identifies the target of the rule and indicates whether URLs matching the rule should be navigated to by the application. Non-matching URLs will be launched externally.
+### Navigation Scope
+For a hosted web application, the W3C manifest defines a scope that restricts the URLs to which the application can navigate. Additionally, the manifest can include a proprietary setting named **mjs_extended_scope** that defines an array of scope rules each one indicating whether URLs matching the rule should be navigated to by the application. Non-matching URLs will be launched externally.
 
-Typically, Cordova applications define access rules to implement a security policy that controls access to external domains. The access rules must not only allow access to the scope defined by the W3C manifest but also to external content used within the site, for example, to reference script files hosted by a CDN origin. 
-
-To configure the security policy, the plugin hook maps the scope and URL access rules in the W3C manifest (**manifest.json**) to suitable access elements in the Cordova configuration file (**config.xml**). For example:
+Typically, Cordova applications define scope rules to implement a security policy that controls access to external domains. To configure the security policy, the plugin hook maps the scope rules in the W3C manifest (**manifest.json**) to suitable `<allow-navigation>` elements in the Cordova configuration file (**config.xml**). For example:
 
 **Manifest.json**
 <pre>
 ...
    "start_url": "http://www.xyz.com/",
    "scope":  "/", 
-   "mjs_access_whitelist": [
-     { "url": "http//googleapis.com/*" },
+   "mjs_extended_scope": [
+     { "url": "http//otherdomain.com/*" },
      { "url": "http//login.anotherdomain.com/" }
    ]
 ...
@@ -152,9 +150,9 @@ To configure the security policy, the plugin hook maps the scope and URL access 
 **Config.xml**
 <pre>
 ...
-&lt;access origin="http://www.xyz.com/*" /&gt;
-&lt;access origin="http://googleapis.com/*" /&gt; 
-&lt;access origin="http://login.anotherdomain.com/" /&gt;
+&lt;allow-navigation href="http://www.xyz.com/*" /&gt;
+&lt;allow-navigation href="http://otherdomain.com/*" /&gt; 
+&lt;allow-navigation href="http://login.anotherdomain.com/" /&gt;
 ...
 </pre>
 
