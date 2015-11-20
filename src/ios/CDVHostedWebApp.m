@@ -471,22 +471,64 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 - (BOOL) shouldOverrideLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
 {
     NSURL* url = [request URL];
-    CDVViewController* cdvViewController = (CDVViewController*)self.viewController;
+
+    if (![self shouldAllowNavigation:url])
+    {
+        if ([[UIApplication sharedApplication] canOpenURL:url])
+        {
+            [[UIApplication sharedApplication] openURL:url]; // opens the URL outside the webview
+            return YES;
+        }
+    }
     
-    if (cdvViewController != nil) {
-        if (cdvViewController.whitelist != nil) {
-            if ([cdvViewController.whitelist schemeIsAllowed:[url scheme]]) {
-                if (![cdvViewController.whitelist URLIsAllowed:url]) {
-                    if ([[UIApplication sharedApplication] canOpenURL:url]) {
-                        [[UIApplication sharedApplication] openURL:url]; // opens the URL outside the webview
-                        return YES;
-                    }
+    return NO;
+}
+
+-(BOOL) shouldAllowNavigation:(NSURL*) url
+{
+    NSMutableArray* scopeList = [[NSMutableArray alloc] initWithCapacity:0];
+    
+    // determine base rule based on the start_url and the scope
+    NSURL* baseURL = nil;
+    NSString* startURL = [self.manifest objectForKey:@"start_url"];
+    if (startURL != nil) {
+        baseURL = [NSURL URLWithString:startURL];
+        NSString* scope = [self.manifest objectForKey:@"scope"];
+        if (scope != nil) {
+            baseURL = [NSURL URLWithString:scope relativeToURL:baseURL];
+        }
+    }
+    
+    if (baseURL != nil) {
+        // If there are no wildcards in the pattern, add '*' at the end
+        if (![[baseURL absoluteString] containsString:@"*"]) {
+            baseURL = [NSURL URLWithString:@"*" relativeToURL:baseURL];
+        }
+        
+        
+        // add base rule to the scope list
+        [scopeList addObject:[baseURL absoluteString]];
+    }
+    
+    // add additional navigation rules
+    NSObject* setting = [self.manifest objectForKey:@"mjs_access_whitelist"];
+    if (setting != nil && [setting isKindOfClass:[NSArray class]])
+    {
+        NSArray* accessRules = (NSArray*) setting;
+        if (accessRules != nil)
+        {
+            for (NSDictionary* rule in accessRules)
+            {
+                NSString *accessUrl = [rule objectForKey:@"url"];
+                if (accessUrl != nil)
+                {
+                    [scopeList addObject:accessUrl];
                 }
             }
         }
     }
     
-    return NO;
+    return [[[CDVWhitelist alloc] initWithArray:scopeList] URLIsAllowed:url];
 }
 
 @end
