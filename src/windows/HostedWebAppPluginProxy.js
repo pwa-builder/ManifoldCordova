@@ -156,7 +156,7 @@ function isMatchingRuleForPage(rule, checkPlatform) {
 
     // ensure rule applies to current platform
     if (checkPlatform) {
-        if (rule.platform && rule.platform.split(';')
+        if (rule.platform && rule.platform.split(',')
             .map(function (item) { return item.trim(); })
             .indexOf('windows') < 0) {
                 return false;

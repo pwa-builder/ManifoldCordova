@@ -265,7 +265,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         NSObject* setting = [rule objectForKey:@"platform"];
         if (setting != nil && [setting isKindOfClass:[NSString class]])
         {
-            for (id item in [(NSString*)setting componentsSeparatedByString:@";"])
+            for (id item in [(NSString*)setting componentsSeparatedByString:@","])
             {
                 if ([[item stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] caseInsensitiveCompare:IOS_PLATFORM] == NSOrderedSame)
                 {

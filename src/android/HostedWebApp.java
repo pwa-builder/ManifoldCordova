@@ -338,7 +338,7 @@ public class HostedWebApp extends CordovaPlugin {
             String platform = item.optString("platform", "").trim();
             if (!platform.isEmpty()) {
                 isPlatformMatch = false;
-                String[] platforms = platform.split(";");
+                String[] platforms = platform.split(",");
                 for (String p : platforms) {
                     if (p.trim().equalsIgnoreCase("android")) {
                         isPlatformMatch = true;
