@@ -43,6 +43,10 @@ function initializeContext(testDir) {
       return require('cordova-lib/src/cordova/util');
     }
 
+    if (moduleName === 'cordova-lib/node_modules/cordova-common') {
+      return require('cordova-lib/node_modules/cordova-common');
+    }
+
     if (moduleName === 'cordova-lib/src/configparser/ConfigParser') {
       return require('cordova-lib/src/configparser/ConfigParser');
     }
@@ -228,27 +232,36 @@ describe('updateConfigurationBeforePrepare.js', function (){
     });
   });
 
-  it('Should remove "root" full access rules from config.xml', function (done){
+  it('Should keep generic network access rules from config.xml', function (done){
     var testDir = path.join(workingDirectory, 'fullAccessRules');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      assert(content.indexOf('<allow-navigation href="http://*/*\" />') === -1);
-      assert(content.indexOf('<allow-navigation href="https://*/*\" />') === -1);
-      assert(content.indexOf('<allow-navigation href="*" />') === -1);
-      assert(content.indexOf('<allow-intent href="https://*/*\" />') === -1);
-      assert(content.indexOf('<allow-intent href="http://*/*\" />') === -1);
+      assert(content.indexOf('<access origin="https://*/*" />') > 0);
+      assert(content.indexOf('<access origin="http://*/*" />') > 0);
+      
+      done();
+    });
+  });
+  
+  it('Should remove generic allow-intent rules from config.xml', function (done){
+    var testDir = path.join(workingDirectory, 'fullAccessRules');
+    var configXML = path.join(testDir, 'config.xml');
+    var ctx = initializeContext(testDir);
+
+    updateConfiguration(ctx).then(function () {
+      var content = fs.readFileSync(configXML).toString();
+      assert(content.indexOf('<allow-intent href="https://*/*" />') === -1);
+      assert(content.indexOf('<allow-intent href="http://*/*" />') === -1);
       assert(content.indexOf('<allow-intent href="*" />') === -1);
-      assert(content.indexOf('<access origin="https://*/*\" />') === -1);
-      assert(content.indexOf('<access origin="http://*/*\" />') === -1);
       
       done();
     });
   });
 
-  it('Should add access rules for web site domain in config.xml if scope is missing', function (done){
+  it('Should add allow-navigation rule for web site domain in config.xml if scope is missing', function (done){
     var testDir = path.join(workingDirectory, 'normalFlow');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
@@ -256,18 +269,13 @@ describe('updateConfigurationBeforePrepare.js', function (){
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
 
-      // rules for android
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
-
-      // rules for ios
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="http://wat-docs.azurewebsites.net/*" />') > 0);
       
       done();
     });
   });
 
-  it('Should add access rules for scope in config.xml if scope is a relative URL', function (done){
+  it('Should add allow-navigation rule for scope in config.xml if scope is a relative URL', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
@@ -275,18 +283,13 @@ describe('updateConfigurationBeforePrepare.js', function (){
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
 
-      // rules for android
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
-      
-      // rules for ios
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/wat-docs.azurewebsites.net\/scope-path\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="http://wat-docs.azurewebsites.net/scope-path/*" />') > 0);
       
       done();
     });
   });
 
-  it('Should add access rules for scope in config.xml if scope is a full URL', function (done){
+  it('Should add allow-navigation rules for scope in config.xml if scope is a full URL', function (done){
     var testDir = path.join(workingDirectory, 'fullUrlForScope');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
@@ -294,18 +297,13 @@ describe('updateConfigurationBeforePrepare.js', function (){
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
 
-      // rules for android
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/www.domain.com\/\*" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/www.domain.com\/\*" \/>[\s\S]*<\/platform>/));
-      
-      // rules for ios
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/www.domain.com\/\*" \/>[\s\S]*<\/platform>/));
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="http://www.domain.com/*" />') > 0);
       
       done();
     });
   });
 
-  it('Should add access rules for scope in config.xml if scope is a full URL with wildcard as subdomain', function (done){
+  it('Should add allow-navigation rule for scope in config.xml if scope is a full URL with wildcard as subdomain', function (done){
     var testDir = path.join(workingDirectory, 'wildcardSubdomainForScope');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
@@ -313,34 +311,23 @@ describe('updateConfigurationBeforePrepare.js', function (){
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
 
-      // rules for android
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
-      
-      // rules for ios
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="http:\/\/\*.domain.com" \/>[\s\S]*<\/platform>/));
-      
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="http://*.domain.com" />') > 0);
+
       done();
     });
   });
 
-  it('Should add access rules from mjs_access_whitelist list', function (done){
+  it('Should add allow-navigation rules from mjs_access_whitelist list', function (done){
     var testDir = path.join(workingDirectory, 'xmlEmptyWidget');
     var configXML = path.join(testDir, 'config.xml');
     var ctx = initializeContext(testDir);
 
     updateConfiguration(ctx).then(function () {
       var content = fs.readFileSync(configXML).toString();
-      // rules for android
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="android">[\s\S]*<allow-navigation hap-rule="yes" href="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
       
-      // rules for ios
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-1" \/>[\s\S]*<\/platform>/));
-      assert(content.match(/<platform name="ios">[\s\S]*<access hap-rule="yes" origin="whitelist-rule-2" \/>[\s\S]*<\/platform>/));
-    
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="whitelist-rule-1" />') > 0);
+      assert(content.indexOf('<allow-navigation hap-rule="yes" href="whitelist-rule-2" />') > 0);
+
       done();
     });
   });

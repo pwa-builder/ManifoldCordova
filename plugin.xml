@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     id="cordova-plugin-hostedwebapp"
-    version="0.1.4">
+    version="0.2.0">
     <name>HostedWebApp</name>
     <description>Hosted Web App Plugin</description>
     <license>MIT License</license>
@@ -20,13 +20,15 @@
     <js-module src="www/hostedWebApp.js" name="hostedwebapp">
         <clobbers target="hostedwebapp" />
     </js-module>
+  
+    <asset src="www/hostedapp-bridge.js" target="hostedapp-bridge.js" />
 
     <engines>
         <engine name="cordova-windows" version="<=4.1.0" />
-        <engine name="cordova-ios" version="<=3.9.1" />
+        <engine name="cordova-ios" version="<=3.9.2" />
         <engine name="cordova-android" version="<=4.1.1" />
     </engines>
-    
+
     <!-- android -->
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">

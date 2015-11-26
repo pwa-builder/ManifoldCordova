@@ -3,10 +3,10 @@ package com.manifoldjs.hostedwebapp;
 import android.content.Intent;
 import android.net.Uri;
 import android.content.res.AssetManager;
-import android.os.Build;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
@@ -16,13 +16,19 @@ import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaPlugin;
 
 import org.apache.cordova.PluginResult;
+import org.apache.cordova.Whitelist;
+import org.apache.cordova.engine.SystemWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
 * This class manipulates the Web App W3C manifest.
@@ -55,7 +61,7 @@ public class HostedWebApp extends CordovaPlugin {
         if (this.assetExists(HostedWebApp.DEFAULT_MANIFEST_FILE)) {
             try {
                 this.manifestObject = this.loadLocalManifest(HostedWebApp.DEFAULT_MANIFEST_FILE);
-                this.webView.postMessage("hostedWebApp_manifestLoaded", this.manifestObject);
+                this.onManifestLoaded();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -119,7 +125,7 @@ public class HostedWebApp extends CordovaPlugin {
                         if (me.assetExists(configFilename)) {
                             try {
                                 me.manifestObject = me.loadLocalManifest(configFilename);
-                                me.webView.postMessage("hostedWebApp_manifestLoaded", me.manifestObject);
+                                me.onManifestLoaded();
                                 callbackContext.success(me.manifestObject);
                             } catch (JSONException e) {
                                 callbackContext.error(e.getMessage());
@@ -137,8 +143,8 @@ public class HostedWebApp extends CordovaPlugin {
                 callbackContext.sendPluginResult(pluginResult);
             }
 
-        return true;
-    }
+            return true;
+        }
 
         if (action.equals("enableOfflinePage")) {
             this.offlineOverlayEnabled = true;
@@ -149,6 +155,25 @@ public class HostedWebApp extends CordovaPlugin {
             this.offlineOverlayEnabled = false;
             return true;
         }
+
+		if (action.equals("injectPluginScript")) {
+			final List<String> scripts = new ArrayList<String>();
+			scripts.add(args.getString(0));
+
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    injectScripts(scripts, new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String s) {
+                            callbackContext.success(1);
+                        }
+                    });
+                }
+            });
+
+            return true;
+		}
 
         return false;
     }
@@ -180,7 +205,15 @@ public class HostedWebApp extends CordovaPlugin {
             if (!this.isConnectionError) {
                 this.hideOfflineOverlay();
             }
+
+            if (data != null) {
+                String url = data.toString();
+                Log.v(LOG_TAG, String.format("Finished loading URL '%s'", url));
+
+                this.injectCordovaScripts(url);
+            }
         }
+
         return null;
     }
 
@@ -229,6 +262,121 @@ public class HostedWebApp extends CordovaPlugin {
 
     public JSONObject getManifest() {
         return this.manifestObject;
+    }
+
+    private void injectCordovaScripts(String pageUrl) {
+
+        // Inject cordova scripts
+        JSONArray apiAccessRules = this.manifestObject.optJSONArray("mjs_api_access");
+        if (apiAccessRules != null) {
+            boolean allowApiAccess = false;
+            for (int i = 0; i < apiAccessRules.length(); i++) {
+                JSONObject apiRule = apiAccessRules.optJSONObject(i);
+                if (apiRule != null) {
+                    // ensure rule applies to current platform and current page
+                    if (this.isMatchingRuleForPage(pageUrl, apiRule, true)) {
+                        String access = apiRule.optString("access", "cordova").trim();
+                        if (access.equalsIgnoreCase("cordova")) {
+                            allowApiAccess = true;
+                        } else if (access.equalsIgnoreCase("none")) {
+                            allowApiAccess = false;
+                            break;
+                        } else {
+                            Log.v(LOG_TAG, String.format("Unsupported API access type '%s' found in mjs_api_access rule.", access));
+                        }
+                    }
+                }
+            }
+
+            if (allowApiAccess) {
+                String pluginMode = "client";
+                String cordovaBaseUrl = "/";
+
+                JSONObject cordovaSettings = this.manifestObject.optJSONObject("mjs_cordova");
+                if (cordovaSettings != null) {
+                    pluginMode = cordovaSettings.optString("plugin_mode", "client").trim();
+                    cordovaBaseUrl = cordovaSettings.optString("base_url", "").trim();
+                    if (!cordovaBaseUrl.endsWith("/")) {
+                        cordovaBaseUrl += "/";
+                    }
+                }
+
+                this.webView.getEngine().loadUrl("javascript: window.hostedWebApp = { 'platform': 'android', 'pluginMode': '" + pluginMode + "', 'cordovaBaseUrl': '" + cordovaBaseUrl + "'};", false);
+
+                List<String> scriptList = new ArrayList<String>();
+                if (pluginMode.equals("client")) {
+                    scriptList.add("cordova.js");
+                }
+
+                scriptList.add("hostedapp-bridge.js");
+                injectScripts(scriptList, null);
+            }
+        }
+
+        // Inject custom scripts
+        JSONArray customScripts = this.manifestObject.optJSONArray("mjs_import_scripts");
+        if (customScripts != null && customScripts.length() > 0) {
+            for (int i = 0; i < customScripts.length(); i++) {
+                JSONObject item = customScripts.optJSONObject(i);
+                if (item != null) {
+                    String source = item.optString("src", "").trim();
+                    if (!source.isEmpty()) {
+                        // ensure script applies to current page
+                        if (this.isMatchingRuleForPage(pageUrl, item, false)) {
+                            injectScripts(Arrays.asList(new String[]{source}), null);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isMatchingRuleForPage(String pageUrl, JSONObject item, boolean checkPlatform) {
+        // ensure item applies to current platform
+        if (checkPlatform) {
+            boolean isPlatformMatch = true;
+            String platform = item.optString("platform", "").trim();
+            if (!platform.isEmpty()) {
+                isPlatformMatch = false;
+                String[] platforms = platform.split(",");
+                for (String p : platforms) {
+                    if (p.trim().equalsIgnoreCase("android")) {
+                        isPlatformMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isPlatformMatch) {
+                return false;
+            }
+        }
+
+        // ensure item applies to current page
+        boolean isURLMatch = true;
+        JSONArray match = item.optJSONArray("match");
+        if (match == null) {
+            match = new JSONArray();
+            String matchString = item.optString("match", "").trim();
+            if (!matchString.isEmpty()) {
+                match.put(matchString);
+            }
+        }
+
+        if (match.length() > 0) {
+            Whitelist whitelist = new Whitelist();
+            for (int j = 0; j < match.length(); j++) {
+                whitelist.addWhiteListEntry(match.optString(j).trim(), false);
+            }
+
+            isURLMatch = whitelist.isUrlWhiteListed(pageUrl);
+        }
+
+        return isURLMatch;
+    }
+
+    private void onManifestLoaded() {
+        this.webView.postMessage("hostedWebApp_manifestLoaded", this.manifestObject);
     }
 
     private CordovaPlugin getWhitelistPlugin() {
@@ -304,10 +452,10 @@ public class HostedWebApp extends CordovaPlugin {
                 public void run() {
                     if (me.rootLayout != null) {
                         me.rootLayout.setVisibility(View.VISIBLE);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
     }
 
     private void hideOfflineOverlay() {
@@ -336,5 +484,83 @@ public class HostedWebApp extends CordovaPlugin {
         }
 
         return null;
+    }
+
+	private void injectScripts(final List<String> files, final ValueCallback<String> resultCallback) {
+        final HostedWebApp me = this;
+
+        this.cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                String script = "";
+                for (int i = 0; i < files.size(); i++) {
+                    String fileName = files.get(i);
+                    String content = "";
+                    Log.w(LOG_TAG, String.format("Injecting script: '%s'", fileName));
+
+                    try {
+                        Uri uri = Uri.parse(fileName);
+                        if (uri.isRelative()) {
+                            // Load script file from assets
+                            try {
+                                InputStream inputStream = me.activity.getResources().getAssets().open("www/" + fileName);
+                                content = me.ReadStreamContent(inputStream);
+
+                            } catch (IOException e) {
+                                Log.v(LOG_TAG, String.format("ERROR: failed to load script file: '%s'", fileName));
+                                e.printStackTrace();
+                            }
+                        } else {
+                            // load script file from URL
+                            URL url = new URL(fileName);
+                            try {
+                                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                                try {
+                                    InputStream inputStream = urlConnection.getInputStream();
+                                    content = me.ReadStreamContent(inputStream);
+                                } finally {
+                                    urlConnection.disconnect();
+                                }
+                            } catch (IOException e) {
+                                Log.v(LOG_TAG, String.format("ERROR: failed to load script file from URL: '%s'", fileName));
+                                e.printStackTrace();
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.v(LOG_TAG, String.format("ERROR: Invalid path format of script file: '%s'", fileName));
+                        e.printStackTrace();
+                    }
+
+                    if (!content.isEmpty()) {
+                        script += "\r\n//# sourceURL=" + fileName + "\r\n" + content;
+                    }
+                }
+
+                final String scriptToInject = script;
+                me.activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SystemWebView webView = (SystemWebView) me.webView.getEngine().getView();
+                        if (webView != null) {
+                            webView.evaluateJavascript(scriptToInject, resultCallback);
+                        } else {
+                            Log.v(LOG_TAG, String.format("WARNING: Unexpected Webview type. Expected: '%s'. Found: '%s'", SystemWebView.class.getName(), me.webView.getEngine().getView().getClass().getName()));
+                            me.webView.getEngine().loadUrl("javascript:" + Uri.encode(scriptToInject), false);
+                            resultCallback.onReceiveValue(null);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    private String ReadStreamContent(InputStream inputStream) throws IOException {
+        int size = inputStream.available();
+        byte[] bytes = new byte[size];
+        inputStream.read(bytes);
+        inputStream.close();
+        String content = new String(bytes, "UTF-8");
+
+        return content;
     }
 }
