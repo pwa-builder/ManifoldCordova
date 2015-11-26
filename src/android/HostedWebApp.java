@@ -17,13 +17,13 @@ import org.apache.cordova.CordovaPlugin;
 
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.Whitelist;
-import org.apache.cordova.engine.SystemWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -540,13 +540,18 @@ public class HostedWebApp extends CordovaPlugin {
                 me.activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        SystemWebView webView = (SystemWebView) me.webView.getEngine().getView();
-                        if (webView != null) {
-                            webView.evaluateJavascript(scriptToInject, resultCallback);
-                        } else {
-                            Log.v(LOG_TAG, String.format("WARNING: Unexpected Webview type. Expected: '%s'. Found: '%s'", SystemWebView.class.getName(), me.webView.getEngine().getView().getClass().getName()));
+                        View webView = me.webView.getEngine().getView();
+
+                        try {
+                            Method evaluateJavaScriptMethod = webView.getClass().getMethod("evaluateJavascript", new Class[]{ String.class, (Class<ValueCallback<String>>)(Class<?>)ValueCallback.class });
+                            evaluateJavaScriptMethod.invoke(webView, scriptToInject, resultCallback);
+                        } catch (Exception e) {
+                            Log.v(LOG_TAG, String.format("WARNING: Webview does not support 'evaluateJavascript' method. Webview type: '%s'", webView.getClass().getName()));
                             me.webView.getEngine().loadUrl("javascript:" + Uri.encode(scriptToInject), false);
-                            resultCallback.onReceiveValue(null);
+
+                            if (resultCallback != null) {
+                                resultCallback.onReceiveValue(null);
+                            }
                         }
                     }
                 });
