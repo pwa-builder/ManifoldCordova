@@ -37,6 +37,8 @@ When the application is launched, the plugin automatically handles navigation to
 
 > **Note:** Although the W3C specs for the Web App manifest consider absolute and relative URLs valid for the _start_url_ value (e.g. _http://www.racer2k.net/racer/start.html_ and _/start.html_ are both valid), the plugin requires this URL **to be an absolute URL**. Otherwise, the installed applications won't be able to navigate to the web site.
 
+The plugin enables the injection of additional Cordova plugins and app-specific scripts that consume them allowing you to take advantage of native features in your hosted web apps.
+
 Lastly, since network connectivity is essential to the operation of a hosted web application, the plugin implements a basic offline feature that will show an offline page whenever connectivity is lost and will prevent users from interacting with the application until the connection is restored.
 
 ## Installation
@@ -81,6 +83,68 @@ The plugin enables using content hosted in a web site inside a Cordova applicati
 
 	> **Note:** The plugin updates the Cordova configuration file (config.xml) with the information in the W3C manifest. If the information in the manifest changes, you can reapply the updated manifest settings at any time by executing prepare. For example:  
 	`cordova prepare`
+
+### Using Cordova Plugins in Hosted Web Apps
+The plugin supports the injection of Cordova and the plugin interface scripts into the pages of a hosted site. There are two different plugin modes: '_server_' and '_client_'. In '_client_' mode, the **cordova.js** file and the plugin interface script files are retrieved from the app package. In '_server_' mode, these files are downloaded from the server along with the rest of the app's content. The plugin also provides a mechanism for injecting scripts that can be used, among other things, to consume the plugins added to the app. Imported scripts can be retrieved from the app package or downloaded from a remote source.
+
+Very briefly, these are the steps that are needed to use plugins:
+
+- Add one or more Cordova plugins to the app.
+
+- Enable API access in any pages where Cordova and the plugins will be used. This injects the Cordova runtime environment and is configured via a custom extension in the W3C manifest. The **match** and **platform** attributes specifies the pages and platforms where you will use Cordova.
+ 
+  ```
+  {
+    ...
+    "mjs_api_access": [
+      { "match": "http://yoursite.com/path1/*", "platform": "android, ios, windows", "access": "cordova" },
+      ...
+    ]
+  }
+  ```
+- Optionally, choose a plugin mode. The default mode is _client_.
+
+    **Client mode**
+    ```
+    {
+    ...
+      "mjs_cordova": {
+        "plugin_mode": "client"
+      }
+    }
+    ```
+
+    **Server mode**
+    ```
+    {
+      ...
+      "mjs_cordova": {
+        "plugin_mode": "server",
+        "base_url": "js/cordova"
+      }
+    }
+    ```
+
+    (In '_server_' mode, the Cordova files and plugin interface scripts must be deployed to the site to the path specified in **base_url**. Also, the **cordova.js** and **cordova_plugins.js** files for each platform need to be renamed to specify the platform in their names so that **cordova.js** and **cordova_plugins.js** become, in the case of Android for example, **cordova-android.js** and **cordova_plugins-android.js** respectively.)
+
+To inject scripts into the hosted web content:
+
+- Update the app's manifest to list the imported scripts in a custom **mjs_import_scripts** section.
+  ```
+  {
+    ...
+    "mjs_import_scripts": [
+      { "src": "js/alerts.js" },
+      { "src": "http://yoursite.com/js/app/contacts.js" },
+      { "src": "js/camera.js", "match": "http://yoursite.com/profile/*" },
+      ...
+    ]
+  }
+  ```
+
+- For app-hosted scripts, copy the script files to the Cordova project. The path in **mjs_import_scripts** must be specified relative to the '_www_' folder of the project. Server-hosted scripts must be deployed to the site.
+
+The following [wiki article](https://github.com/manifoldjs/ManifoldJS/wiki/Using-Cordova-Plugins-in-Hosted-Web-Apps) provides additional information about these features.
 
 ### Offline Feature
 The plugin implements a basic offline feature that will show an offline page whenever network connectivity is lost. By default, the page shows a suitable message alerting the user about the loss of connectivity. To customize the offline experience, a page named **offline.html** can be placed in the **www** folder of the application and it will be used instead.
