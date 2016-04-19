@@ -147,7 +147,19 @@ To inject scripts into the hosted web content:
 The following [wiki article](https://github.com/manifoldjs/ManifoldJS/wiki/Using-Cordova-Plugins-in-Hosted-Web-Apps) provides additional information about these features.
 
 ### Offline Feature
-The plugin implements a basic offline feature that will show an offline page whenever network connectivity is lost. By default, the page shows a suitable message alerting the user about the loss of connectivity. To customize the offline experience, a page named **offline.html** can be placed in the **www** folder of the application and it will be used instead.
+The plugin implements an offline feature that will show an offline page whenever network connectivity is lost.
+
+The feature is enabled by default, but can be disabled with the following property in the manifest.json file.
+
+```
+{
+  ...
+  "mjs_offline_feature": false
+  ...
+}
+```
+
+By default, the page shows a suitable message informing the user about the loss of connectivity. To customize the offline experience, a page named **offline.html** can be placed in the **www** folder of the application and it will be used instead.
 
 1. To test the offline feature, interrupt the network connection to show the offline page and reconnect it to hide it. 
 

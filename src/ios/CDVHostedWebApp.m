@@ -54,9 +54,6 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 {
     [super pluginInitialize];
 
-    // creates the UI to show offline mode
-    [self createOfflineView];
-
     // observe notifications from network-information plugin to detect when device is offline
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(updateConnectivityStatus:)
@@ -94,6 +91,14 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     notificationDelegate = [[CVDWebViewNotificationDelegate alloc] init];
     notificationDelegate.wrappedDelegate = self.webView.delegate;
     [self.webView setDelegate:notificationDelegate];
+
+    id offlineFeature = [manifest objectForKey:@"mjs_offline_feature"];
+    if (offlineFeature != nil && [offlineFeature boolValue] == NO) {
+        self.enableOfflineSupport = NO;
+    } else {
+        // creates the UI to show offline mode
+        [self createOfflineView];
+    }
 }
 
 // loads the specified W3C manifest
