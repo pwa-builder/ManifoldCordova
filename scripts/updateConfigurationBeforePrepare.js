@@ -587,11 +587,12 @@ module.exports = function (context) {
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
-        logger.error('Failed to read manifest at \'' + manifestPath + '\'.');
-        return task.reject(err);
+        logger.warn('Failed to read manifest at \'' + manifestPath + '\'. Proceeding to point config.xml to sample url of https://www.npmjs.com/package/cordova-plugin-hostedwebapp.');
+        data = JSON.stringify({ 'start_url': 'https://www.npmjs.com/package/cordova-plugin-hostedwebapp', 'short_name' : 'PlaceholderSite'});
       }
 
       var manifestJson = data.toString().replace(/^\uFEFF/, '');
+
       var appManifestPath = path.join(projectRoot, 'www', 'manifest.json');
       fs.writeFile(appManifestPath, manifestJson, function (err) {
         if (err) {
