@@ -47,7 +47,7 @@ public class HostedWebApp extends CordovaPlugin {
 
     private LinearLayout rootLayout;
     private WebView offlineWebView;
-    private boolean offlineOverlayEnabled;
+    private boolean offlineOverlayEnabled = true;
 
     private boolean isConnectionError = false;
 
@@ -69,6 +69,11 @@ public class HostedWebApp extends CordovaPlugin {
 
         this.loadingManifest = false;
 
+        if (!this.manifestObject.optBoolean("mjs_offline_feature", true)) {
+            this.offlineOverlayEnabled = false;
+            // Do not initialize offline overlay
+            return;
+        }
         // Initialize offline overlay
         this.activity.runOnUiThread(new Runnable() {
             @Override
