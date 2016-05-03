@@ -552,7 +552,7 @@ public class HostedWebApp extends CordovaPlugin {
                             evaluateJavaScriptMethod.invoke(webView, scriptToInject, resultCallback);
                         } catch (Exception e) {
                             Log.v(LOG_TAG, String.format("WARNING: Webview does not support 'evaluateJavascript' method. Webview type: '%s'", webView.getClass().getName()));
-                            me.webView.getEngine().loadUrl("javascript:" + Uri.encode(scriptToInject), false);
+                            me.webView.getEngine().loadUrl("javascript:" + scriptToInject, false);
 
                             if (resultCallback != null) {
                                 resultCallback.onReceiveValue(null);
