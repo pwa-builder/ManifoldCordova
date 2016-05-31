@@ -1,0 +1,9 @@
+{
+  "start_url": "http://wat-docs.azurewebsites.net/",
+  "name": "WAT Documentation",
+	"orientation": "landscape",
+	"display": "fullscreen",
+	"mjs_urlAccess": [
+		{ "url": "http://ajax.googleapis.com/*" }
+  ]
+}

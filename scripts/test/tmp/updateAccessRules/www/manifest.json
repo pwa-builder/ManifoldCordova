@@ -1,0 +1,9 @@
+{
+  "start_url": "http://wat-docs.azurewebsites.net/",
+  "name": "WAT Documentation",
+	"scope": "http://wat-docs.azurewebsites.net/*",
+	"mjs_urlAccess": [
+  		{ "url": "http://ajax.googleapis.com/*" },
+      { "url": "http://wat.codeplex.com", "external": true }
+	]
+}

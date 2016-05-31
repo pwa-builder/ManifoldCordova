@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget id="com.example.hello" version="0.0.1">
+  <name>HelloWorld</name>
+  <description>
+      A sample Apache Cordova application that responds to the deviceready event.
+  </description>
+  <author email="dev@callback.apache.org" href="http://cordova.io">
+      Apache Cordova Team
+  </author>
+  <content src="index.html" />
+  <access origin="*" />
+  <access hap-rule="yes" origin="http://wat.codeplex.com" />
+  <platform name="android">
+      <access hap-rule="yes" launch-external="yes" origin="http://ajax.googleapis.com/*" />
+  </platform>
+</widget>
