@@ -1,5 +1,6 @@
 #import "CDVHostedWebApp.h"
 #import <Cordova/CDV.h>
+#import <Cordova/CDVAvailability.h>
 #import "CDVConnection.h"
 
 static NSString* const IOS_PLATFORM = @"ios";
@@ -473,6 +474,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     }
 }
 
+#ifndef __CORDOVA_4_0_0
 - (BOOL) shouldOverrideLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
 {
     NSURL* url = [request URL];
@@ -488,6 +490,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     
     return NO;
 }
+#endif
 
 -(BOOL) shouldAllowNavigation:(NSURL*) url
 {
