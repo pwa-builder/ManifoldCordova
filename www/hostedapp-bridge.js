@@ -40,9 +40,14 @@
             }
 
             // change bridge mode in iOS to avoid Content Security Policy (CSP) issues with 'gap://' frame origin
+            // Note that all bridge modes except IFRAME_NAV were dropped starting from cordova-ios@4.0.0 (see 
+            // https://issues.apache.org/jira/browse/CB-9883), so plugins will *not* work correctly in pages that
+            // restrict the gap:// origin
             if (platform === 'ios') {
                 var exec = cordova.require('cordova/exec');
-                exec.setJsToNativeBridgeMode(exec.jsToNativeModes.XHR_OPTIONAL_PAYLOAD);
+                if (exec.setJsToNativeBridgeMode && exec.jsToNativeModes && exec.jsToNativeModes.XHR_OPTIONAL_PAYLOAD) {
+                    exec.setJsToNativeBridgeMode(exec.jsToNativeModes.XHR_OPTIONAL_PAYLOAD);                    
+                }
             }
 
             // override plugin loader to handle script injection
