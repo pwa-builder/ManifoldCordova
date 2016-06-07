@@ -438,7 +438,11 @@ cordova.commandProxy.add('HostedWebApp', module.exports);
 
 module.exports.loadManifest(
     function (manifest) {
-        configureOfflineSupport('offline.html');
+        if (manifest.mjs_offline_feature === false) {
+            _enableOfflineSupport = false;
+        } else {
+            configureOfflineSupport('offline.html');
+        }
         configureWhiteList(manifest);
         _mainView = configureHost(manifest ? manifest.start_url : 'about:blank', _zIndex);
         _mainView.addEventListener("MSWebViewDOMContentLoaded", domContentLoadedEvent, false);
