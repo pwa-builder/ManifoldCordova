@@ -57,7 +57,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
     // observe notifications from network-information plugin to detect when device is offline
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(updateConnectivityStatus:)
+                                             selector:@selector(networkReachabilityChanged:)
                                                  name:kReachabilityChangedNotification
                                                object:nil];
 
@@ -79,6 +79,18 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                                                  name:kCDVHostedWebAppWebViewDidFailLoadWithError
                                                object:nil];
 
+    // observe notifications from app when it pauses
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(appStateChange)
+                                                 name:UIApplicationDidEnterBackgroundNotification
+                                               object:nil];
+
+    // observe notifications from app when it resumes
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(appStateChange)
+                                                 name:UIApplicationWillEnterForegroundNotification
+                                               object:nil];
+    
     // enable offline support by default
     self.enableOfflineSupport = YES;
 
@@ -347,26 +359,31 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     [self.viewController.view sendSubviewToBack:self.webView];
 }
 
-// Handles notifications from the network-information plugin and shows the offline page whenever
-// network connectivity is lost. It restores the original view once the network is up again.
-- (void)updateConnectivityStatus:(NSNotification*)notification
+- (void)networkReachabilityChanged:(NSNotification*)notification
 {
     if ([[notification name] isEqualToString:kReachabilityChangedNotification]) {
         CDVReachability* reachability = [notification object];
-        if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
-            BOOL isOffline = (reachability.currentReachabilityStatus == NotReachable);
-            NSLog (@"Received a network connectivity change notification. The device is currently %@.", isOffline ? @"offLine" : @"online");
-            if (self.enableOfflineSupport) {
-                if (isOffline) {
-                    [self.offlineView setHidden:NO];
+        [self updateConnectivityStatus:reachability];
+    }
+}
+
+// Handles notifications from the network-information plugin and shows the offline page whenever
+// network connectivity is lost. It restores the original view once the network is up again.
+- (void)updateConnectivityStatus:(CDVReachability*)reachability
+{
+    if ((reachability != nil) && [reachability isKindOfClass:[CDVReachability class]]) {
+        BOOL isOffline = (reachability.currentReachabilityStatus == NotReachable);
+        NSLog (@"Received a network connectivity change notification. The device is currently %@.", isOffline ? @"offLine" : @"online");
+        if (self.enableOfflineSupport) {
+            if (isOffline) {
+                [self.offlineView setHidden:NO];
+            }
+            else {
+                if (self.failedURL) {
+                    [(UIWebView*)self.webView loadRequest: [NSURLRequest requestWithURL: self.failedURL]];
                 }
                 else {
-                    if (self.failedURL) {
-                        [(UIWebView*)self.webView loadRequest: [NSURLRequest requestWithURL: self.failedURL]];
-                    }
-                    else {
-                        [self.offlineView setHidden:YES];
-                    }
+                    [self.offlineView setHidden:YES];
                 }
             }
         }
@@ -552,6 +569,14 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     }
     
     return [[[CDVWhitelist alloc] initWithArray:scopeList] URLIsAllowed:url];
+}
+
+// Updates the network connectivity status when the app is paused or resumes
+// NOTE: for onPause and onResume, calls into JavaScript must not call or trigger any blocking UI, like alerts
+- (void) appStateChange
+{
+    CDVConnection* connection = [self.commandDelegate getCommandInstance:@"NetworkStatus"];
+    [self updateConnectivityStatus:connection.internetReach];
 }
 
 @end
