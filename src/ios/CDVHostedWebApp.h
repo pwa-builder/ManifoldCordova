@@ -13,20 +13,20 @@
 
 @interface CDVHostedWebApp : CDVPlugin
 {
-    CVDWebViewNotificationDelegate *notificationDelegate;
-    NSDictionary *manifest;
+    CVDWebViewNotificationDelegate* notificationDelegate;
+    NSDictionary* manifest;
 }
 
-@property (nonatomic, strong, readonly) NSDictionary *manifest;
+@property (nonatomic, strong, readonly) NSDictionary* manifest;
 
--(void) loadManifest:(CDVInvokedUrlCommand*)command;
+- (void)loadManifest:(CDVInvokedUrlCommand*)command;
 
--(void) getManifest:(CDVInvokedUrlCommand*)command;
+- (void)getManifest:(CDVInvokedUrlCommand*)command;
 
--(void) enableOfflinePage:(CDVInvokedUrlCommand*)command;
+- (void)enableOfflinePage:(CDVInvokedUrlCommand*)command;
 
--(void) disableOfflinePage:(CDVInvokedUrlCommand*)command;
+- (void)disableOfflinePage:(CDVInvokedUrlCommand*)command;
 
--(void) injectPluginScript:(CDVInvokedUrlCommand *)command;
+- (void)injectPluginScript:(CDVInvokedUrlCommand*)command;
 
 @end
