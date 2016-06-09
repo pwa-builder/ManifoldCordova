@@ -511,7 +511,6 @@ static NSString* const defaultManifestFileName = @"manifest.json";
     
     return NO;
 }
-#endif
 
 - (BOOL)shouldAllowNavigation:(NSURL*)url
 {
@@ -574,6 +573,7 @@ static NSString* const defaultManifestFileName = @"manifest.json";
     
     return [[[CDVWhitelist alloc] initWithArray:scopeList] URLIsAllowed:url];
 }
+#endif
 
 // Updates the network connectivity status when the app is paused or resumes
 // NOTE: for onPause and onResume, calls into JavaScript must not call or trigger any blocking UI, like alerts
