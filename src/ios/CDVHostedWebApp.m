@@ -19,25 +19,29 @@ static NSString* const DEFAULT_CORDOVA_BASE_URL = @"";
 
 @implementation CVDWebViewNotificationDelegate
 
-- (void)webViewDidStartLoad:(UIWebView*)theWebView {
-    [self.wrappedDelegate webViewDidStartLoad: theWebView];
+- (void)webViewDidStartLoad:(UIWebView*)theWebView
+{
+    [self.wrappedDelegate webViewDidStartLoad:theWebView];
 
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidStartLoad object:theWebView]];
 }
 
-- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
+- (BOOL)webView:(UIWebView*)webView shouldStartLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
+{
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewShouldStartLoadWithRequest object:request]];
 
     return [self.wrappedDelegate webView:webView shouldStartLoadWithRequest:request navigationType:navigationType];
 }
 
-- (void)webViewDidFinishLoad:(UIWebView *)webView {
+- (void)webViewDidFinishLoad:(UIWebView*)webView
+{
     [self.wrappedDelegate webViewDidFinishLoad:webView];
 
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidFinishLoad object:webView]];
 }
 
-- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
+- (void)webView:(UIWebView*)webView didFailLoadWithError:(NSError*)error
+{
     [self.wrappedDelegate webView:webView didFailLoadWithError:error];
 
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:kCDVHostedWebAppWebViewDidFailLoadWithError object:error]];
@@ -49,7 +53,7 @@ static NSString* const DEFAULT_CORDOVA_BASE_URL = @"";
 
 @synthesize manifest;
 
-static NSString * const defaultManifestFileName = @"manifest.json";
+static NSString* const defaultManifestFileName = @"manifest.json";
 
 - (void)pluginInitialize
 {
@@ -115,8 +119,8 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 }
 
 // loads the specified W3C manifest
--(void) loadManifest:(CDVInvokedUrlCommand *)command {
-
+- (void)loadManifest:(CDVInvokedUrlCommand*)command
+{
     CDVPluginResult* pluginResult = nil;
     NSString* manifestFileName = [command.arguments objectAtIndex:0];
 
@@ -131,8 +135,8 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 }
 
 // returns the currently loaded manifest
--(void) getManifest:(CDVInvokedUrlCommand *)command {
-
+- (void)getManifest:(CDVInvokedUrlCommand*)command
+{
     CDVPluginResult* pluginResult = nil;
     if (self.manifest != nil) {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:self.manifest];
@@ -144,32 +148,32 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 }
 
 // enables offline page support
--(void) enableOfflinePage:(CDVInvokedUrlCommand *)command {
-
+- (void)enableOfflinePage:(CDVInvokedUrlCommand*)command
+{
     self.enableOfflineSupport = YES;
-    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 // disables offline page support
--(void) disableOfflinePage:(CDVInvokedUrlCommand *)command {
-
+- (void)disableOfflinePage:(CDVInvokedUrlCommand*)command
+{
     self.enableOfflineSupport = NO;
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
--(void) injectPluginScript:(CDVInvokedUrlCommand *)command {
-    
+- (void)injectPluginScript:(CDVInvokedUrlCommand*)command
+{    
     NSArray* scriptList = @[[command.arguments objectAtIndex:0]];
-    BOOL result = [self injectScripts: scriptList];
+    BOOL result = [self injectScripts:scriptList];
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:result];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 // loads a manifest file and parses it
--(NSDictionary *) loadManifestFile:(NSString *)manifestFileName {
-
+- (NSDictionary*)loadManifestFile:(NSString*)manifestFileName
+{
     self.manifestError = nil;
 
     if (manifestFileName == nil) {
@@ -182,13 +186,13 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         return nil;
     }
 
-    NSData *manifestData = [NSData dataWithContentsOfFile:filePath];
+    NSData* manifestData = [NSData dataWithContentsOfFile:filePath];
     if (manifestData == nil) {
         self.manifestError = [NSString stringWithFormat:@"Error reading manifest file: %@", manifestFileName];
         return nil;
     }
 
-    NSError *error = nil;
+    NSError* error = nil;
     id parsedManifest = [NSJSONSerialization JSONObjectWithData:manifestData options:0 error:&error];
 
     if (error) {
@@ -207,18 +211,18 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     return nil;
 }
 
--(BOOL) injectScripts:(NSArray *)scriptList {
-    
+- (BOOL)injectScripts:(NSArray*)scriptList
+{    
     NSString* content = @"";
     for (NSString* scriptName in scriptList)
     {
         NSURL* scriptUrl = [NSURL URLWithString:scriptName relativeToURL:[NSURL URLWithString:@"www/"]];
         NSString* scriptPath = scriptUrl.absoluteString;
-        NSError *error = nil;
+        NSError* error = nil;
         NSString* fileContents =  nil;
         if (scriptUrl.scheme == nil)
         {
-            fileContents = [NSString stringWithContentsOfFile: [[NSBundle mainBundle] pathForResource: scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
+            fileContents = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:scriptPath ofType:nil] encoding:NSUTF8StringEncoding error:&error];
         }
         else
         {
@@ -237,7 +241,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     return[(UIWebView*)self.webView stringByEvaluatingJavaScriptFromString:content] != nil;
 }
 
-- (BOOL) isCordovaEnabled
+- (BOOL)isCordovaEnabled
 {
     BOOL enableCordova = NO;
     NSObject* setting = [self.manifest objectForKey:@"mjs_api_access"];
@@ -274,7 +278,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     return enableCordova;
 }
 
--(BOOL) isMatchingRuleForPage:(NSDictionary*) rule withPlatformCheck: (BOOL) checkPlatform
+- (BOOL)isMatchingRuleForPage:(NSDictionary*)rule withPlatformCheck:(BOOL)checkPlatform
 {
     // ensure rule applies to current platform
     if (checkPlatform)
@@ -307,7 +311,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         NSArray* match = nil;
         if ([setting isKindOfClass:[NSArray class]])
         {
-            match = (NSArray*) setting;
+            match = (NSArray*)setting;
         }
         else if ([setting isKindOfClass:[NSString class]])
         {
@@ -316,7 +320,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         
         if (match != nil)
         {
-            CDVWhitelist *whitelist = [[CDVWhitelist alloc] initWithArray:match];
+            CDVWhitelist* whitelist = [[CDVWhitelist alloc] initWithArray:match];
             NSURL* url = ((UIWebView*)self.webView).request.URL;
             isURLMatch = [whitelist URLIsAllowed:url];
         }
@@ -350,7 +354,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         [self.offlineView loadRequest:[NSURLRequest requestWithURL:offlinePageURL]];
     }
     else {
-        NSString *offlinePageTemplate = @"<html><body><div style=\"height:100%;position:absolute;top:0;bottom:0;left:0;right:0;margin:auto 20;font-size:x-large;text-align:center;\">%@</div></body></html>";
+        NSString* offlinePageTemplate = @"<html><body><div style=\"height:100%;position:absolute;top:0;bottom:0;left:0;right:0;margin:auto 20;font-size:x-large;text-align:center;\">%@</div></body></html>";
         [self.offlineView
             loadHTMLString:[NSString stringWithFormat:offlinePageTemplate, @"It looks like you are offline. Please reconnect to use this application."]
             baseURL:nil];
@@ -380,7 +384,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             }
             else {
                 if (self.failedURL) {
-                    [(UIWebView*)self.webView loadRequest: [NSURLRequest requestWithURL: self.failedURL]];
+                    [(UIWebView*)self.webView loadRequest:[NSURLRequest requestWithURL:self.failedURL]];
                 }
                 else {
                     [self.offlineView setHidden:YES];
@@ -440,18 +444,18 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             NSMutableArray* scripts = [[NSMutableArray alloc] init];
             if ([pluginMode isEqualToString:@"client"])
             {
-                [scripts addObject: @"cordova.js"];
+                [scripts addObject:@"cordova.js"];
             }
             
-            [scripts addObject: @"hostedapp-bridge.js"];
-            [self injectScripts: scripts];
+            [scripts addObject:@"hostedapp-bridge.js"];
+            [self injectScripts:scripts];
         }
         
         // inject custom scripts
         NSObject* setting = [self.manifest objectForKey:@"mjs_import_scripts"];
         if (setting != nil && [setting isKindOfClass:[NSArray class]])
         {
-            NSArray* customScripts = (NSArray*) setting;
+            NSArray* customScripts = (NSArray*)setting;
             if (customScripts != nil && customScripts.count > 0)
             {
                 for (NSDictionary* item in customScripts)
@@ -459,7 +463,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                     if ([self isMatchingRuleForPage:item withPlatformCheck:NO])
                     {
                         NSString* source = [item valueForKey:@"src"];
-                        [self injectScripts: @[source]];
+                        [self injectScripts:@[source]];
                     }
                 }
             }
@@ -492,7 +496,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 }
 
 #ifndef __CORDOVA_4_0_0
-- (BOOL) shouldOverrideLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
+- (BOOL)shouldOverrideLoadWithRequest:(NSURLRequest*)request navigationType:(UIWebViewNavigationType)navigationType
 {
     NSURL* url = [request URL];
 
@@ -509,7 +513,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 }
 #endif
 
--(BOOL) shouldAllowNavigation:(NSURL*) url
+- (BOOL)shouldAllowNavigation:(NSURL*)url
 {
     NSMutableArray* scopeList = [[NSMutableArray alloc] initWithCapacity:0];
     
@@ -540,12 +544,12 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     NSObject* setting = [self.manifest objectForKey:@"mjs_access_whitelist"];
     if (setting != nil && [setting isKindOfClass:[NSArray class]])
     {
-        NSArray* accessRules = (NSArray*) setting;
+        NSArray* accessRules = (NSArray*)setting;
         if (accessRules != nil)
         {
             for (NSDictionary* rule in accessRules)
             {
-                NSString *accessUrl = [rule objectForKey:@"url"];
+                NSString* accessUrl = [rule objectForKey:@"url"];
                 if (accessUrl != nil)
                 {
                     [scopeList addObject:accessUrl];
@@ -558,7 +562,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
     setting = [self.manifest objectForKey:@"mjs_extended_scope"];
     if (setting != nil && [setting isKindOfClass:[NSArray class]])
     {
-        NSArray* scopeRules = (NSArray*) setting;
+        NSArray* scopeRules = (NSArray*)setting;
         if (scopeRules != nil)
         {
             for (NSString* rule in scopeRules)
@@ -573,7 +577,7 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
 // Updates the network connectivity status when the app is paused or resumes
 // NOTE: for onPause and onResume, calls into JavaScript must not call or trigger any blocking UI, like alerts
-- (void) appStateChange
+- (void)appStateChange
 {
     CDVConnection* connection = [self.commandDelegate getCommandInstance:@"NetworkStatus"];
     [self updateConnectivityStatus:connection.internetReach];
