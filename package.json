@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-hostedwebapp",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Hosted Web App Plugin",
   "cordova": {
     "id": "cordova-plugin-hostedwebapp",
