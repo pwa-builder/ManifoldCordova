@@ -643,10 +643,14 @@ module.exports = function (context) {
           }
 
         })(manifest.orientation));
-
+        
         if (manifest.display) {
           config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
         }
+        
+        if (manifest.description) {
+            config.setElement('description', manifest.description);
+		}
 
         // configure access rules
         processAccessRules(manifest);
