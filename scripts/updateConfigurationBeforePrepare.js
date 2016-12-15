@@ -5,6 +5,7 @@ var fs = require('fs'),
     url = require('url'),
     downloader = require('./downloader'),
     createConfigParser = require('./createConfigParser'),
+    colorConverter = require('./colorConverter'),
     pendingTasks = [],
     Q,
     defaultIconsBaseDir,
@@ -651,6 +652,13 @@ module.exports = function (context) {
         if (manifest.description) {
             config.setElement('description', manifest.description);
 		}
+
+        if (manifest.background_color) {
+            var bgColor = colorConverter.toHexadecimal(manifest.background_color);
+            if (bgColor) {
+                config.setPreference('BackgroundColor', bgColor);
+            }
+        }
 
         // configure access rules
         processAccessRules(manifest);
