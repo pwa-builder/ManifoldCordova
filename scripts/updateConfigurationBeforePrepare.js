@@ -660,6 +660,10 @@ module.exports = function (context) {
             }
         }
 
+        if (manifest.lang) {
+            config.setElement('defaultlocale', manifest.lang);
+        }
+
         // configure access rules
         processAccessRules(manifest);
 
