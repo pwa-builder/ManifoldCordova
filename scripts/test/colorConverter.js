@@ -48,6 +48,9 @@ describe.only('colorConverter', function() {
         it('Should return false if text is not an alias', function () {
             assert.ok(!colorConverter.isAlias('lorem ipsum'));
         });
+        it('Should return true if text is \'transparent\'', function() {
+            assert.ok(colorConverter.isAlias('transparent'));
+        })
     });
     describe('fromAlias()', function () {
         it('Should return a four byte hex value if the alias is valid', function () {
@@ -63,6 +66,9 @@ describe.only('colorConverter', function() {
             }
             assert(hasError);
         });
+        it('Should return a four byte hex value (0x00000000) if alias is \'transparent\'', function() {
+            assert.equal(colorConverter.fromAlias('transparent'), '0x00000000');
+        })
     });
     describe('isRGB()', function () {
         it('Should return true if text has correct format (with spaces)', function () {

@@ -39,8 +39,14 @@ function fromAlias(color) {
     if (!isAlias(color)) {
         throw new Error('The color passed has not a valid format.');
     }
+    var alphaChannel = 1;
+    if (color === 'transparent') {
+        alphaChannel = 0;
+    }
+    alphaChannel = getHexaWithPadding(alphaChannel * 255);
+
     var hexColor = colorConstants.colorsAlias[color.toLowerCase()];
-    return fromHexadecimal(hexColor);
+    return fromHexadecimal(hexColor, alphaChannel);
 }
 
 function fromRGB(color) {
