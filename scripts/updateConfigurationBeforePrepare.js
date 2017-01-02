@@ -145,21 +145,7 @@ function processImageList(manifest, images, baseUrl) {
           "type": image.type
         };
 
-        var oldElement;
-        imageList.forEach(function(listElement) {
-          if (listElement.width === element.width 
-            && listElement.height === element.height) {
-            oldElement = listElement;
-          }
-        });
-
-        if (!oldElement) {
-          imageList.push(element);
-        } else if (embeddedIcon) {
-          oldElement.src = element.src;
-          oldElement.density = element.density;
-          oldElement.type = element.type;
-        }
+        imageList.push(element);
       });
 
       if (embeddedIcon) {
