@@ -123,9 +123,12 @@ function processImageList(manifest, images, baseUrl) {
   var imageList = [];
   if (images && images instanceof Array) {
     images.forEach(function (image) {
-      var isDataUri = false;
+      var embeddedIcon, imageFilename;
+
       if (image.src.match('^' + dataUriFormat)) {
-        isDataUri = true;
+        embeddedIcon = image.src;
+        imageFilename = path.join(projectRoot, image.fileName || '/embedded/' + newGuid() + '.png');        
+        image.src = url.parse(imageFilename.replace(projectRoot, '')).pathname;
       } else {
         var imageUrl = url.resolve(baseUrl, image.src);
         image.src = url.parse(imageUrl).pathname;
@@ -142,14 +145,24 @@ function processImageList(manifest, images, baseUrl) {
           "type": image.type
         };
 
-        imageList.push(element);
+        var oldElement;
+        imageList.forEach(function(listElement) {
+          if (listElement.width === element.width 
+            && listElement.height === element.height) {
+            oldElement = listElement;
+          }
+        });
+
+        if (!oldElement) {
+          imageList.push(element);
+        } else if (embeddedIcon) {
+          oldElement.src = element.src;
+          oldElement.density = element.density;
+          oldElement.type = element.type;
+        }
       });
 
-      if (isDataUri) {
-        var imageFilename = path.join(projectRoot, image.fileName || '/embedded/' + newGuid() + '.png');
-        var embeddedIcon = image.src;
-        image.src = url.parse(imageFilename.replace(projectRoot, '')).path;
-
+      if (embeddedIcon) {
         // flag the manifest as updated and remove fileName from manifest's icon if present
         manifest.__updated = true;
         delete(image.fileName);
