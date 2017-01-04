@@ -31,6 +31,19 @@ var logger = {
   }
 };
 
+var dataUriFormat = 'data:image/png;base64,';
+
+function newGuid () {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
 function ensurePathExists(pathName, callback) {
   fs.mkdir(pathName, function (err) {
     if (err) {
@@ -80,13 +93,47 @@ function downloadImage(imageUrl, imagesPath, imageSrc) {
   });          
 }
 
+function writeEmbeddedImage(imageFilename, embeddedImage) {
+  var deferral = new Q.defer();
+  pendingTasks.push(deferral.promise);
+
+  var imagePath = path.dirname(imageFilename);
+  ensurePathExists(imagePath, function(err) {
+    if (err && err.code !== 'EEXIST') {
+      return logger.error("ERROR: Failed to create directory at: " + imagePath + ' - ' + err.message);
+    }
+
+    var image = new Buffer(embeddedImage.replace(dataUriFormat, ''), 'base64');
+
+    fs.writeFile(imageFilename, image, function(err) {
+      if (err) {
+        logger.error('Failed to write embbeded icon: ' + imageFilename);
+        return deferral.reject(err);
+      }
+
+      logger.log('Written embbeded icon file: ' + imageFilename);
+
+      deferral.resolve();
+    });
+  });
+}
+
 // normalize image list and download images to project folder
-function processImageList(images, baseUrl) {
+function processImageList(manifest, images, baseUrl) {
   var imageList = [];
   if (images && images instanceof Array) {
     images.forEach(function (image) {
-      var imageUrl = url.resolve(baseUrl, image.src);
-      image.src = url.parse(imageUrl).pathname;
+      var embeddedIcon, imageFilename;
+
+      if (image.src.match('^' + dataUriFormat)) {
+        embeddedIcon = image.src;
+        imageFilename = path.join(projectRoot, image.fileName || '/embedded/' + newGuid() + '.png');        
+        image.src = url.parse(imageFilename.replace(projectRoot, '')).pathname;
+      } else {
+        var imageUrl = url.resolve(baseUrl, image.src);
+        image.src = url.parse(imageUrl).pathname;
+      }
+
       var sizes = image.sizes.toLowerCase().split(' ');
       sizes.forEach(function (imageSize) {
         var dimensions = imageSize.split('x');
@@ -101,9 +148,16 @@ function processImageList(images, baseUrl) {
         imageList.push(element);
       });
 
-      var imagePath = path.dirname(path.join(projectRoot, image.src));
-            
-      downloadImage(imageUrl, imagePath, image.src);
+      if (embeddedIcon) {
+        // flag the manifest as updated and remove fileName from manifest's icon if present
+        manifest.__updated = true;
+        delete(image.fileName);
+
+        writeEmbeddedImage(imageFilename, embeddedIcon);
+      } else {
+        var imagePath = path.dirname(path.join(projectRoot, image.src));
+        downloadImage(imageUrl, imagePath, image.src);
+      }
     });
   }
 
@@ -670,11 +724,10 @@ module.exports = function (context) {
         // Obtain and download the icons and splash screens specified in the manifest.
         // Currently, splash screens specified in the splash_screens section of the manifest 
         // take precedence over similarly sized splash screens in the icons section.
-        var manifestIcons = processImageList(manifest.icons, manifest.start_url);
-        var manifestSplashScreens = processImageList(manifest.splash_screens, manifest.start_url);
+        var manifestIcons = processImageList(manifest, manifest.icons, manifest.start_url);
+        var manifestSplashScreens = processImageList(manifest, manifest.splash_screens, manifest.start_url);
 
-        Q.allSettled(pendingTasks).then(function () {
-            
+        Q.allSettled(pendingTasks).then(function () {            
           // Configure the icons once all icon files are downloaded
           processiOSIcons(manifestIcons, manifestSplashScreens);
           processAndroidIcons(manifestIcons, manifestSplashScreens);
@@ -683,7 +736,21 @@ module.exports = function (context) {
           
           // save the updated configuration
           config.write();
-          
+        }).then(function() {
+          //ovewrite the updated w3c manifest if this is the case
+          if (manifest.__updated) {
+            logger.log('Manifest has been updated');
+            
+            delete(manifest.__updated);
+
+            var manifestFiles = [ manifestPath, appManifestPath ];
+            logger.log('Writting manifest files: ' + manifestFiles);
+
+            return Q.allSettled(manifestFiles.map(function(manifestFile) {
+              return Q.nfcall(fs.writeFile, manifestFile, JSON.stringify(manifest, null, 4));
+            }));
+          }
+
           task.resolve();
         });
       });
