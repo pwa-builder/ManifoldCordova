@@ -743,15 +743,17 @@ module.exports = function (context) {
             
             delete(manifest.__updated);
 
-            var manifestFiles = [ manifestPath, appManifestPath ];
+            var manifestFiles = [ manifestPath + '.updated', appManifestPath + '.updated' ];
             logger.log('Writting manifest files: ' + manifestFiles);
 
             return Q.allSettled(manifestFiles.map(function(manifestFile) {
               return Q.nfcall(fs.writeFile, manifestFile, JSON.stringify(manifest, null, 4));
-            }));
+            })).then(function() {
+              task.resolve();
+            });
+          } else {
+            task.resolve();
           }
-
-          task.resolve();
         });
       });
     });
